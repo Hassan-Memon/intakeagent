@@ -1,6 +1,8 @@
 import type { ApprovedRecord, IntakeRecord, Session, Vertical } from "./types";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Default to 127.0.0.1 rather than localhost: browsers may resolve localhost to ::1 while
+// the backend listens on IPv4 only, which shows up as a misleading CORS error.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://127.0.0.1:8000";
 export const WS_URL =
   process.env.NEXT_PUBLIC_WS_URL ?? API_URL.replace(/^http/, "ws");
 

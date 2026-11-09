@@ -106,12 +106,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         description="Voice-first intake agent with FHIR R4 and Clio exports and mandatory HITL.",
         lifespan=lifespan,
     )
+    # CORS must be registered before the routers so preflight (OPTIONS) requests are answered
+    # by the middleware. Origins come from CORS_ORIGINS. WebSocket upgrades are not subject to
+    # CORS; the browser sends an Origin header which a reverse proxy or auth layer can check.
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
+        max_age=600,
     )
     app.include_router(rest.router)
     app.include_router(ws.router)

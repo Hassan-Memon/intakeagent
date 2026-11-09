@@ -52,7 +52,9 @@ class Settings(BaseSettings):
     clio_refresh_token: str = Field(default="", alias="CLIO_REFRESH_TOKEN")
 
     # Web
-    cors_origins: str = Field(default="http://localhost:3000", alias="CORS_ORIGINS")
+    cors_origins: str = Field(
+        default="http://localhost:3000,http://127.0.0.1:3000", alias="CORS_ORIGINS"
+    )
 
     @property
     def cors_origin_list(self) -> list[str]:
