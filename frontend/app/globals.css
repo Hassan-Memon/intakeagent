@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+/* Calm, high-contrast palette for a front desk screen. Teal accent, warm neutrals. */
+@theme {
+  --color-ink: #16302b;
+  --color-ink-soft: #4f6660;
+  --color-mist: #f5f8f7;
+  --color-line: #d8e3e0;
+  --color-accent: #0f766e;
+  --color-accent-strong: #0b5d57;
+  --color-accent-soft: #d8f0ec;
+  --color-warn: #b45309;
+  --color-warn-soft: #fef3c7;
+  --color-ok: #15803d;
+  --color-ok-soft: #dcfce7;
+  --color-danger: #b91c1c;
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-mist);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+.card {
+  @apply rounded-2xl border border-line bg-white p-5 shadow-sm;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 bg-accent text-white hover:bg-accent-strong;
+}
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 border border-line bg-white text-ink hover:bg-mist;
+}
+.btn-danger {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 border border-danger/30 bg-white text-danger hover:bg-red-50;
+}
+
+.input {
+  @apply w-full rounded-lg border border-line bg-white px-3 py-2 text-sm text-ink placeholder:text-ink-soft/60 focus:border-accent;
+}
+
+.label {
+  @apply text-xs font-semibold uppercase tracking-wide text-ink-soft;
+}
+
+mark.evidence {
+  background: var(--color-accent-soft);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 1px;
+}
