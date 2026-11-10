@@ -1,0 +1,19 @@
+{
+  // Cloudflare Workers config for the public demo (`npm run cf:deploy`).
+  // Built with NEXT_PUBLIC_DEMO_MODE=1, so the worker serves the UI only and the backend is
+  // simulated in the visitor's browser. Fits the Workers free plan.
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "intakeagent",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  }
+}

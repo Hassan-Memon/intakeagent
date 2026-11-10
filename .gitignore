@@ -22,6 +22,9 @@ backend/htmlcov/
 node_modules/
 frontend/.next/
 frontend/out/
+frontend/.open-next/
+frontend/.wrangler/
+frontend/.dev.vars
 frontend/next-env.d.ts
 frontend/*.tsbuildinfo
 npm-debug.log*
