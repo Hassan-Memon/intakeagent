@@ -10,6 +10,11 @@ own inference box.
 ![Python](https://img.shields.io/badge/python-3.12%2B-blue)
 ![Next.js](https://img.shields.io/badge/next.js-15-black)
 
+> **Live demo: [intakeagent.hassan-memon.workers.dev](https://intakeagent.hassan-memon.workers.dev).**
+> Choose a clinic or law-firm intake, play the sample patient or client (or type answers), then
+> review, approve and export a FHIR R4 bundle or Clio JSON. The backend is simulated in your
+> browser, the people are fictional, and nothing you type leaves the page.
+
 - **Talks, listens, follows up.** Browser microphone to WebSocket to Whisper; a LangGraph agent
   extracts a structured record and asks for whatever is still missing.
 - **Two verticals, one engine.** `PatientIntake` (demographics, chief complaint, meds, allergies,
@@ -198,6 +203,7 @@ docs/
 
 ## Documentation
 
+- [docs/README.md](docs/README.md): a map of every document in this repository
 - [WebSocket and REST protocol](docs/protocol.md)
 - [Compliance notes](docs/compliance.md)
 - [Positioning](docs/positioning.md)
@@ -209,7 +215,7 @@ docs/
 
 ## Status
 
-MVP. Working: full demo flow, 40 offline tests, FHIR Bundle validated with `fhir.resources`,
+MVP, version 0.1.0. See [CHANGELOG.md](CHANGELOG.md) for the full history. Working: full demo flow, 40 offline tests, FHIR Bundle validated with `fhir.resources`,
 Clio payloads in v4 shape with a mocked live path, HITL interrupt and resume, PHI redaction,
 pgvector RAG with SQLite fallback. Not yet: authentication, encryption at rest beyond the
 database provider, WebRTC transport, Presidio integration, production hardening. See
