@@ -145,6 +145,36 @@ the provider itself asks for.
 5. **Optional local LLM.** Run Ollama on any machine you control (Oracle Always Free ARM works)
    and point `OLLAMA_BASE_URL` at it, or run OpenInfer and set `OPENINFER_BASE_URL`.
 
+## Deploy to Cloudflare Workers (free)
+
+Live demo: **https://intakeagent.hassan-memon.workers.dev**
+
+The public demo is the frontend alone, built with `NEXT_PUBLIC_DEMO_MODE=1`. In that mode
+`lib/api.ts` and `lib/ws.ts` talk to an in-browser simulation of the backend (`frontend/lib/demo`)
+instead of FastAPI: a TypeScript port of the rule-based extractor fills fields with evidence
+spans, the question picker asks for missing required fields in the same order and words as the
+backend, and approve and export build a real-shaped FHIR R4 transaction Bundle or Clio Contact +
+Matter JSON that you can download. State lives in `sessionStorage`, nothing is sent anywhere, and
+every page shows a banner saying so. Speech-to-text needs the real backend, so the demo offers a
+fictional sample patient or client to play instead. For the full stack, use `docker compose up`.
+
+The worker is built with [OpenNext for Cloudflare](https://opennext.js.org/cloudflare) and fits
+the Workers free plan (about 0.9 MiB gzipped against the 3 MiB limit, no KV, R2 or D1 needed).
+
+```bash
+cd frontend
+npm ci
+npx wrangler login          # once, opens the browser
+npm run cf:preview          # build in demo mode and serve the worker locally on :8787
+npm run cf:deploy           # build in demo mode and deploy the "intakeagent" worker
+```
+
+`cf:build` sets `NEXT_PUBLIC_DEMO_MODE=1` for that build only; `npm run build` and the Docker
+image are unchanged and still talk to the real backend. Config lives in `frontend/wrangler.jsonc`
+(worker name, `nodejs_compat`, static assets binding, `workers_dev`) and
+`frontend/open-next.config.ts`. To check the bundle size before deploying:
+`npx wrangler deploy --dry-run` after `npm run cf:build`.
+
 ## Repository map
 
 ```
