@@ -1,4 +1,5 @@
 import { WS_URL } from "./api";
+import { connectDemoIntake } from "./demo/socket";
 import type { ClientMessage, ServerMessage } from "./types";
 
 export interface IntakeSocket {
@@ -23,6 +24,8 @@ export function connectIntake(
     onError?: () => void;
   },
 ): IntakeSocket {
+  // Inline env check so normal builds fold it away and drop the simulated socket.
+  if (process.env.NEXT_PUBLIC_DEMO_MODE === "1") return connectDemoIntake(sessionId, handlers);
   const ws = new WebSocket(`${WS_URL}/ws/intake/${sessionId}`);
   ws.binaryType = "arraybuffer";
 

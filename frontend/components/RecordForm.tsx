@@ -178,7 +178,7 @@ function ListEditor({
       ))}
       {!readOnly && (
         <button type="button" onClick={add} className="btn-secondary px-3 py-1.5 text-xs">
-          Add {labelFor(name).toLowerCase().replace(/s$/, "")}
+          Add {labelFor(name).toLowerCase().replace(/ies$/, "y").replace(/s$/, "")}
         </button>
       )}
     </div>

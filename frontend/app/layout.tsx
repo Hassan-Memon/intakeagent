@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DemoBanner } from "@/components/DemoBanner";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
+        <DemoBanner />
         <header className="border-b border-line bg-white">
           <nav
             className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3"

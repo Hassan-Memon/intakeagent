@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { DEMO_MODE, api } from "@/lib/api";
 import type { Vertical } from "@/lib/types";
 
 const OPTIONS: { vertical: Vertical; title: string; body: string; output: string }[] = [
@@ -69,7 +69,14 @@ export function StartIntake() {
           {error}. Is the backend running on {process.env.NEXT_PUBLIC_API_URL ?? "localhost:8000"}?
         </p>
       )}
-      {health && (
+      {DEMO_MODE && (
+        <p className="text-xs text-ink-soft">
+          Each intake comes with a fictional sample patient or client you can play, or type your
+          own answers. Extraction uses a TypeScript port of the backend&apos;s rule-based
+          extractor, so what you type really fills the record.
+        </p>
+      )}
+      {health && !DEMO_MODE && (
         <p className="text-xs text-ink-soft">
           Backend: {health.demo_mode ? "demo mode (scripted speech, no keys needed)" : "live"}; LLM{" "}
           {health.llm}; speech-to-text {health.stt}.

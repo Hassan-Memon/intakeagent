@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { SAMPLES, SAMPLE_LABEL, pickSampleLine } from "@/lib/demo/samples";
 import { SegmentRecorder } from "@/lib/recorder";
 import { connectIntake, type IntakeSocket } from "@/lib/ws";
 import type { FieldSpec, IntakeRecord, ServerMessage, TranscriptSegment, Vertical } from "@/lib/types";
@@ -11,6 +12,9 @@ import { LevelMeter } from "./LevelMeter";
 import { QuestionPanel } from "./QuestionPanel";
 import { StatusPill } from "./StatusPill";
 import { TranscriptPanel } from "./TranscriptPanel";
+
+// Local copy of the flag (not imported) so the minifier can drop the demo sample player.
+const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "1";
 
 type ConnState = "connecting" | "listening" | "transcribing" | "thinking" | "finishing" | "awaiting_approval" | "disconnected";
 
@@ -32,8 +36,39 @@ export function IntakeClient({ sessionId }: { sessionId: string }) {
   const [typed, setTyped] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [sttName, setSttName] = useState<string>("");
+  const [micTried, setMicTried] = useState(false);
+  const [sampleUsed, setSampleUsed] = useState<number[]>([]);
+  const [playing, setPlaying] = useState(false);
 
   const busy = conn === "transcribing" || conn === "thinking" || conn === "finishing";
+  // Before the first turn the backend reports no missing fields because nothing has been
+  // extracted yet; show every required field as outstanding instead of all ticked.
+  const shownMissing =
+    Object.keys(record).length === 0
+      ? specs.filter((s) => s.required).map((s) => s.name)
+      : missing;
+  const sampleLabel = DEMO_MODE && vertical ? SAMPLE_LABEL[vertical] : "sample";
+  const sampleDone =
+    DEMO_MODE && vertical ? sampleUsed.length >= SAMPLES[vertical].length : false;
+
+  // Demo only: feed the scripted sample conversation one line per agent turn, answering the
+  // question the agent just asked when the script has a line for it.
+  useEffect(() => {
+    if (!DEMO_MODE || !playing || !vertical || conn !== "listening") return;
+    const idx = pickSampleLine(vertical, sampleUsed, field);
+    if (idx === null) {
+      setPlaying(false);
+      return;
+    }
+    const delay = sampleUsed.length === 0 ? 700 : 1400 + Math.random() * 900;
+    const timer = setTimeout(() => {
+      const line = SAMPLES[vertical][idx];
+      if (!line) return;
+      setSampleUsed((prev) => [...prev, idx]);
+      socketRef.current?.send({ type: "text", text: line.text });
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [playing, vertical, conn, field, sampleUsed]);
 
   const onMessage = useCallback(
     (msg: ServerMessage) => {
@@ -115,6 +150,7 @@ export function IntakeClient({ sessionId }: { sessionId: string }) {
       return;
     }
     setError(null);
+    setMicTried(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const rec = new SegmentRecorder(
@@ -139,6 +175,7 @@ export function IntakeClient({ sessionId }: { sessionId: string }) {
   }
 
   function finish() {
+    setPlaying(false);
     stopRecording();
     socketRef.current?.send({ type: "finish" });
   }
@@ -182,13 +219,51 @@ export function IntakeClient({ sessionId }: { sessionId: string }) {
             </button>
             <LevelMeter level={level} active={recording} />
             <span className="text-xs text-ink-soft">
-              {recording
-                ? "Audio is sent in short segments as you speak."
-                : sttName === "stub"
-                  ? "Demo mode: each segment plays the next scripted line."
-                  : "Press to start."}
+              {DEMO_MODE
+                ? recording
+                  ? "Level meter only: audio stays in this tab and is not transcribed."
+                  : "Microphone drives the level meter only in this demo."
+                : recording
+                  ? "Audio is sent in short segments as you speak."
+                  : sttName === "stub"
+                    ? "Demo mode: each segment plays the next scripted line."
+                    : "Press to start."}
             </span>
           </div>
+
+          {DEMO_MODE && (
+            <div className="space-y-3 rounded-xl border border-line bg-mist p-4 text-sm">
+              {micTried && (
+                <p role="status" className="text-ink">
+                  Speech-to-text runs on the real backend (Whisper via Groq or faster-whisper).
+                  In this browser demo nothing is transcribed, so type your answers below or let
+                  the {sampleLabel} answer for you.
+                </p>
+              )}
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPlaying((p) => !p)}
+                  disabled={
+                    sampleDone || conn === "disconnected" || conn === "awaiting_approval"
+                  }
+                  aria-pressed={playing}
+                  className="btn-secondary"
+                >
+                  {playing ? `Pause ${sampleLabel}` : `Play ${sampleLabel}`}
+                </button>
+                <span className="text-xs text-ink-soft" aria-live="polite">
+                  {sampleDone
+                    ? `The ${sampleLabel} has finished. Press "Finish and review".`
+                    : playing
+                      ? conn === "listening"
+                        ? `The ${sampleLabel} is answering...`
+                        : "Waiting for the assistant..."
+                      : `A fictional ${sampleLabel} answers each question with realistic pauses.`}
+                </span>
+              </div>
+            </div>
+          )}
 
           <div>
             <p className="label">Transcript</p>
@@ -216,7 +291,13 @@ export function IntakeClient({ sessionId }: { sessionId: string }) {
         </section>
 
         <aside className="card space-y-6 lg:col-span-2">
-          <QuestionPanel question={question} field={field} specs={specs} missing={missing} busy={busy} />
+          <QuestionPanel
+            question={question}
+            field={field}
+            specs={specs}
+            missing={shownMissing}
+            busy={busy}
+          />
           <div className="border-t border-line pt-4">
             <button
               type="button"
@@ -227,8 +308,8 @@ export function IntakeClient({ sessionId }: { sessionId: string }) {
               Finish and review
             </button>
             <p className="mt-2 text-center text-xs text-ink-soft">
-              {missing.length > 0
-                ? `${missing.length} required detail${missing.length === 1 ? "" : "s"} still missing. You can fill them in on the review screen.`
+              {shownMissing.length > 0
+                ? `${shownMissing.length} required detail${shownMissing.length === 1 ? "" : "s"} still missing. You can fill them in on the review screen.`
                 : "All required details captured."}
             </p>
             <p className="sr-only">{Object.keys(record).length} fields in record</p>

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { api } from "@/lib/api";
+import { DEMO_MODE, api } from "@/lib/api";
 import { vertLabel } from "@/lib/format";
 import type { IntakeRecord, Session } from "@/lib/types";
 import { RecordForm } from "./RecordForm";
@@ -81,6 +81,27 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
     } finally {
       setBusy(null);
     }
+  }
+
+  function downloadExport() {
+    if (!session || !exportResult) return;
+    // FHIR: the transaction Bundle itself, ready to POST to a FHIR server. Clio: the full
+    // result (contact, matter, conflict check and the exact v4 request payloads).
+    const body = exportTarget === "fhir" ? exportResult.payload : exportResult;
+    const name =
+      exportTarget === "fhir"
+        ? `fhir-bundle-${session.id.slice(0, 8)}.json`
+        : `clio-contact-matter-${session.id.slice(0, 8)}.json`;
+    const url = URL.createObjectURL(
+      new Blob([JSON.stringify(body, null, 2)], { type: "application/json" }),
+    );
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   if (error && !session) {
@@ -165,10 +186,11 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
                       : "Export to Clio (Contact + Matter)"}
                 </button>
                 <p className="text-xs text-ink-soft">
-                  Approved. Export builds the payload{" "}
-                  {exportTarget === "fhir"
-                    ? "and pushes to the FHIR server only if FHIR_PUSH=1."
-                    : "and runs a conflict check; live mode needs Clio OAuth credentials."}
+                  {DEMO_MODE
+                    ? "Approved. In this demo the payload is built in your browser and is not sent anywhere."
+                    : exportTarget === "fhir"
+                      ? "Approved. Export builds the payload and pushes to the FHIR server only if FHIR_PUSH=1."
+                      : "Approved. Export builds the payload and runs a conflict check; live mode needs Clio OAuth credentials."}
                 </p>
               </>
             )}
@@ -193,7 +215,10 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
                   </>
                 )}
               </p>
-              <details className="mt-3">
+              <button type="button" onClick={downloadExport} className="btn-secondary mt-3 w-full">
+                Download {exportTarget === "fhir" ? "FHIR Bundle" : "Clio JSON"} (.json)
+              </button>
+              <details className="mt-3" open={DEMO_MODE}>
                 <summary className="cursor-pointer text-sm text-accent">Show payload</summary>
                 <pre className="mt-2 max-h-80 overflow-auto rounded-lg bg-mist p-3 text-[11px] leading-snug">
                   {JSON.stringify(exportResult, null, 2)}

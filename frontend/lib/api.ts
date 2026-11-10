@@ -1,4 +1,11 @@
+import { demoApi } from "./demo/backend";
 import type { ApprovedRecord, IntakeRecord, Session, Vertical } from "./types";
+
+/**
+ * NEXT_PUBLIC_DEMO_MODE=1 swaps the HTTP client for an in-browser simulation of the backend
+ * (lib/demo). Used for the public static demo; nothing leaves the page in that mode.
+ */
+export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "1";
 
 // Default to 127.0.0.1 rather than localhost: browsers may resolve localhost to ::1 while
 // the backend listens on IPv4 only, which shows up as a misleading CORS error.
@@ -25,7 +32,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-export const api = {
+const httpApi = {
   createSession: (vertical: Vertical) =>
     request<Session>("/sessions", { method: "POST", body: JSON.stringify({ vertical }) }),
   getSession: (id: string) => request<Session>(`/sessions/${id}`),
@@ -42,3 +49,8 @@ export const api = {
   health: () =>
     request<{ demo_mode: boolean; llm: string; stt: string; llm_local: boolean }>("/health"),
 };
+
+// The env check is spelled out (not DEMO_MODE) so the minifier can fold it and drop the demo
+// module from normal builds.
+export const api: typeof httpApi =
+  process.env.NEXT_PUBLIC_DEMO_MODE === "1" ? demoApi : httpApi;
