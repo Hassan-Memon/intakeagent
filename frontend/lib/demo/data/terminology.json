@@ -1,0 +1,1214 @@
+{
+ "generated_at": "2026-11-13T14:21:46+00:00",
+ "source": "NLM RxNav, RxClass (DailyMed) and Clinical Tables ICD-10-CM",
+ "drugs": [
+  {
+   "query": "metformin",
+   "rxcui": "6809",
+   "name": "metformin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "6809",
+     "display": "metformin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D001645",
+     "name": "Biguanides",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175565",
+     "name": "Biguanide",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "lisinopril",
+   "rxcui": "29046",
+   "name": "lisinopril",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "29046",
+     "display": "lisinopril"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175562",
+     "name": "Angiotensin Converting Enzyme Inhibitor",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "amoxicillin",
+   "rxcui": "723",
+   "name": "amoxicillin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "723",
+     "display": "amoxicillin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D010406",
+     "name": "Penicillins",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175497",
+     "name": "Penicillin-class Antibacterial",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "augmentin",
+   "rxcui": "151392",
+   "name": "Augmentin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "48203",
+     "display": "clavulanate"
+    },
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "723",
+     "display": "amoxicillin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175930",
+     "name": "beta Lactamase Inhibitor",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "D010406",
+     "name": "Penicillins",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175497",
+     "name": "Penicillin-class Antibacterial",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "penicillin g",
+   "rxcui": "7980",
+   "name": "penicillin G",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "7980",
+     "display": "penicillin G"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D010406",
+     "name": "Penicillins",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175497",
+     "name": "Penicillin-class Antibacterial",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "cephalexin",
+   "rxcui": "2231",
+   "name": "cephalexin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "2231",
+     "display": "cephalexin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D002511",
+     "name": "Cephalosporins",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175488",
+     "name": "Cephalosporin Antibacterial",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "azithromycin",
+   "rxcui": "18631",
+   "name": "azithromycin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "18631",
+     "display": "azithromycin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D018942",
+     "name": "Macrolides",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175935",
+     "name": "Macrolide Antimicrobial",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "doxycycline",
+   "rxcui": "3640",
+   "name": "doxycycline",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "3640",
+     "display": "doxycycline"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D013754",
+     "name": "Tetracyclines",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175882",
+     "name": "Tetracycline-class Drug",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "ciprofloxacin",
+   "rxcui": "2551",
+   "name": "ciprofloxacin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "2551",
+     "display": "ciprofloxacin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D024841",
+     "name": "Fluoroquinolones",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000193223",
+     "name": "Fluoroquinolone Antibacterial",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "sulfamethoxazole",
+   "rxcui": "10180",
+   "name": "sulfamethoxazole",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "10180",
+     "display": "sulfamethoxazole"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D013449",
+     "name": "Sulfonamides",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175504",
+     "name": "Sulfonamide Antimicrobial",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "ibuprofen",
+   "rxcui": "5640",
+   "name": "ibuprofen",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "5640",
+     "display": "ibuprofen"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175722",
+     "name": "Nonsteroidal Anti-inflammatory Drug",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "naproxen",
+   "rxcui": "7258",
+   "name": "naproxen",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "7258",
+     "display": "naproxen"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175722",
+     "name": "Nonsteroidal Anti-inflammatory Drug",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "aspirin",
+   "rxcui": "1191",
+   "name": "aspirin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "1191",
+     "display": "aspirin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175578",
+     "name": "Platelet Aggregation Inhibitor",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175722",
+     "name": "Nonsteroidal Anti-inflammatory Drug",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "acetaminophen",
+   "rxcui": "161",
+   "name": "acetaminophen",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "161",
+     "display": "acetaminophen"
+    }
+   ],
+   "classes": []
+  },
+  {
+   "query": "codeine",
+   "rxcui": "2670",
+   "name": "codeine",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "2670",
+     "display": "codeine"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175690",
+     "name": "Opioid Agonist",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "tramadol",
+   "rxcui": "10689",
+   "name": "tramadol",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "10689",
+     "display": "tramadol"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175690",
+     "name": "Opioid Agonist",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "morphine",
+   "rxcui": "7052",
+   "name": "morphine",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "7052",
+     "display": "morphine"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175690",
+     "name": "Opioid Agonist",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "atorvastatin",
+   "rxcui": "83367",
+   "name": "atorvastatin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "83367",
+     "display": "atorvastatin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175589",
+     "name": "HMG-CoA Reductase Inhibitor",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "simvastatin",
+   "rxcui": "36567",
+   "name": "simvastatin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "36567",
+     "display": "simvastatin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175589",
+     "name": "HMG-CoA Reductase Inhibitor",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "amlodipine",
+   "rxcui": "17767",
+   "name": "amlodipine",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "17767",
+     "display": "amlodipine"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D004095",
+     "name": "Dihydropyridines",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175421",
+     "name": "Dihydropyridine Calcium Channel Blocker",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175566",
+     "name": "Calcium Channel Blocker",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "losartan",
+   "rxcui": "52175",
+   "name": "losartan",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "52175",
+     "display": "losartan"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175561",
+     "name": "Angiotensin 2 Receptor Blocker",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "hydrochlorothiazide",
+   "rxcui": "5487",
+   "name": "hydrochlorothiazide",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "5487",
+     "display": "hydrochlorothiazide"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D049971",
+     "name": "Thiazides",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175419",
+     "name": "Thiazide Diuretic",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "metoprolol",
+   "rxcui": "6918",
+   "name": "metoprolol",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "6918",
+     "display": "metoprolol"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175556",
+     "name": "beta-Adrenergic Blocker",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "levothyroxine",
+   "rxcui": "10582",
+   "name": "levothyroxine",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "10582",
+     "display": "levothyroxine"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D013974",
+     "name": "Thyroxine",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175945",
+     "name": "l-Thyroxine",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "omeprazole",
+   "rxcui": "7646",
+   "name": "omeprazole",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "7646",
+     "display": "omeprazole"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175525",
+     "name": "Proton Pump Inhibitor",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "albuterol",
+   "rxcui": "435",
+   "name": "albuterol",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "435",
+     "display": "albuterol"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175779",
+     "name": "beta2-Adrenergic Agonist",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "sertraline",
+   "rxcui": "36437",
+   "name": "sertraline",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "36437",
+     "display": "sertraline"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175696",
+     "name": "Serotonin Reuptake Inhibitor",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "fluoxetine",
+   "rxcui": "4493",
+   "name": "fluoxetine",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "4493",
+     "display": "fluoxetine"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175696",
+     "name": "Serotonin Reuptake Inhibitor",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "insulin glargine",
+   "rxcui": "274783",
+   "name": "insulin glargine",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "274783",
+     "display": "insulin glargine"
+    }
+   ],
+   "classes": [
+    {
+     "id": "D007328",
+     "name": "Insulin",
+     "source": "DAILYMED"
+    },
+    {
+     "id": "N0000175453",
+     "name": "Insulin Analog",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "warfarin",
+   "rxcui": "11289",
+   "name": "warfarin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "11289",
+     "display": "warfarin"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175476",
+     "name": "Vitamin K Antagonist",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "prednisone",
+   "rxcui": "8640",
+   "name": "prednisone",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "8640",
+     "display": "prednisone"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175576",
+     "name": "Corticosteroid",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "gabapentin",
+   "rxcui": "25480",
+   "name": "gabapentin",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "25480",
+     "display": "gabapentin"
+    }
+   ],
+   "classes": []
+  },
+  {
+   "query": "cetirizine",
+   "rxcui": "20610",
+   "name": "cetirizine",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "20610",
+     "display": "cetirizine"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175587",
+     "name": "Histamine-1 Receptor Antagonist",
+     "source": "DAILYMED"
+    }
+   ]
+  },
+  {
+   "query": "montelukast",
+   "rxcui": "88249",
+   "name": "montelukast",
+   "ingredients": [
+    {
+     "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+     "code": "88249",
+     "display": "montelukast"
+    }
+   ],
+   "classes": [
+    {
+     "id": "N0000175777",
+     "name": "Leukotriene Receptor Antagonist",
+     "source": "DAILYMED"
+    }
+   ]
+  }
+ ],
+ "aliases": {
+  "penicillin": "penicillin g",
+  "tylenol": "acetaminophen",
+  "paracetamol": "acetaminophen",
+  "advil": "ibuprofen",
+  "motrin": "ibuprofen",
+  "aleve": "naproxen",
+  "lipitor": "atorvastatin",
+  "synthroid": "levothyroxine",
+  "zoloft": "sertraline",
+  "prozac": "fluoxetine",
+  "bactrim": "sulfamethoxazole",
+  "keflex": "cephalexin",
+  "lantus": "insulin glargine"
+ },
+ "icd10cm": [
+  {
+   "code": "A78",
+   "display": "Q fever"
+  },
+  {
+   "code": "A79.0",
+   "display": "Trench fever"
+  },
+  {
+   "code": "A93.1",
+   "display": "Sandfly fever"
+  },
+  {
+   "code": "A96.2",
+   "display": "Lassa fever"
+  },
+  {
+   "code": "D72.12",
+   "display": "Drug rash with eosinophilia and systemic symptoms syndrome"
+  },
+  {
+   "code": "E02",
+   "display": "Subclinical iodine-deficiency hypothyroidism"
+  },
+  {
+   "code": "E03.1",
+   "display": "Congenital hypothyroidism without goiter"
+  },
+  {
+   "code": "E03.3",
+   "display": "Postinfectious hypothyroidism"
+  },
+  {
+   "code": "E03.8",
+   "display": "Other specified hypothyroidism"
+  },
+  {
+   "code": "E03.9",
+   "display": "Hypothyroidism, unspecified"
+  },
+  {
+   "code": "E10.A2",
+   "display": "Type 1 diabetes mellitus, presymptomatic, Stage 2"
+  },
+  {
+   "code": "E11.21",
+   "display": "Type 2 diabetes mellitus with diabetic nephropathy"
+  },
+  {
+   "code": "E11.36",
+   "display": "Type 2 diabetes mellitus with diabetic cataract"
+  },
+  {
+   "code": "E11.41",
+   "display": "Type 2 diabetes mellitus with diabetic mononeuropathy"
+  },
+  {
+   "code": "E11.65",
+   "display": "Type 2 diabetes mellitus with hyperglycemia"
+  },
+  {
+   "code": "E11.9",
+   "display": "Type 2 diabetes mellitus without complications"
+  },
+  {
+   "code": "E89.0",
+   "display": "Postprocedural hypothyroidism"
+  },
+  {
+   "code": "F32.A",
+   "display": "Depression, unspecified"
+  },
+  {
+   "code": "F40.8",
+   "display": "Other phobic anxiety disorders"
+  },
+  {
+   "code": "F40.9",
+   "display": "Phobic anxiety disorder, unspecified"
+  },
+  {
+   "code": "F41.1",
+   "display": "Generalized anxiety disorder"
+  },
+  {
+   "code": "F41.3",
+   "display": "Other mixed anxiety disorders"
+  },
+  {
+   "code": "F41.8",
+   "display": "Other specified anxiety disorders"
+  },
+  {
+   "code": "F41.9",
+   "display": "Anxiety disorder, unspecified"
+  },
+  {
+   "code": "F51.01",
+   "display": "Primary insomnia"
+  },
+  {
+   "code": "F51.02",
+   "display": "Adjustment insomnia"
+  },
+  {
+   "code": "F51.03",
+   "display": "Paradoxical insomnia"
+  },
+  {
+   "code": "F51.04",
+   "display": "Psychophysiologic insomnia"
+  },
+  {
+   "code": "F53.0",
+   "display": "Postpartum depression"
+  },
+  {
+   "code": "G43.411",
+   "display": "Hemiplegic migraine, intractable, with status migrainosus"
+  },
+  {
+   "code": "G43.A1",
+   "display": "Cyclical vomiting, in migraine, intractable"
+  },
+  {
+   "code": "G43.B0",
+   "display": "Ophthalmoplegic migraine, not intractable"
+  },
+  {
+   "code": "G43.B1",
+   "display": "Ophthalmoplegic migraine, intractable"
+  },
+  {
+   "code": "G43.D0",
+   "display": "Abdominal migraine, not intractable"
+  },
+  {
+   "code": "G43.D1",
+   "display": "Abdominal migraine, intractable"
+  },
+  {
+   "code": "G44.53",
+   "display": "Primary thunderclap headache"
+  },
+  {
+   "code": "G44.81",
+   "display": "Hypnic headache"
+  },
+  {
+   "code": "G44.83",
+   "display": "Primary cough headache"
+  },
+  {
+   "code": "G44.84",
+   "display": "Primary exertional headache"
+  },
+  {
+   "code": "G44.86",
+   "display": "Cervicogenic headache"
+  },
+  {
+   "code": "G47.00",
+   "display": "Insomnia, unspecified"
+  },
+  {
+   "code": "G47.09",
+   "display": "Other insomnia"
+  },
+  {
+   "code": "G93.31",
+   "display": "Postviral fatigue syndrome"
+  },
+  {
+   "code": "G93.32",
+   "display": "Myalgic encephalomyelitis/chronic fatigue syndrome"
+  },
+  {
+   "code": "H92.01",
+   "display": "Otalgia, right ear"
+  },
+  {
+   "code": "H92.02",
+   "display": "Otalgia, left ear"
+  },
+  {
+   "code": "H92.03",
+   "display": "Otalgia, bilateral"
+  },
+  {
+   "code": "H92.09",
+   "display": "Otalgia, unspecified ear"
+  },
+  {
+   "code": "I10",
+   "display": "Essential (primary) hypertension"
+  },
+  {
+   "code": "J01.80",
+   "display": "Other acute sinusitis"
+  },
+  {
+   "code": "J01.90",
+   "display": "Acute sinusitis, unspecified"
+  },
+  {
+   "code": "J02.8",
+   "display": "Acute pharyngitis due to other specified organisms"
+  },
+  {
+   "code": "J02.9",
+   "display": "Acute pharyngitis, unspecified"
+  },
+  {
+   "code": "J30.1",
+   "display": "Allergic rhinitis due to pollen"
+  },
+  {
+   "code": "J30.2",
+   "display": "Other seasonal allergic rhinitis"
+  },
+  {
+   "code": "J30.5",
+   "display": "Allergic rhinitis due to food"
+  },
+  {
+   "code": "J30.81",
+   "display": "Allergic rhinitis due to animal (cat) (dog) hair and dander"
+  },
+  {
+   "code": "J30.89",
+   "display": "Other allergic rhinitis"
+  },
+  {
+   "code": "J30.9",
+   "display": "Allergic rhinitis, unspecified"
+  },
+  {
+   "code": "J32.0",
+   "display": "Chronic maxillary sinusitis"
+  },
+  {
+   "code": "J32.1",
+   "display": "Chronic frontal sinusitis"
+  },
+  {
+   "code": "J32.2",
+   "display": "Chronic ethmoidal sinusitis"
+  },
+  {
+   "code": "J32.3",
+   "display": "Chronic sphenoidal sinusitis"
+  },
+  {
+   "code": "J45.20",
+   "display": "Mild intermittent asthma, uncomplicated"
+  },
+  {
+   "code": "J45.30",
+   "display": "Mild persistent asthma, uncomplicated"
+  },
+  {
+   "code": "J45.909",
+   "display": "Unspecified asthma, uncomplicated"
+  },
+  {
+   "code": "J45.991",
+   "display": "Cough variant asthma"
+  },
+  {
+   "code": "J45.998",
+   "display": "Other asthma"
+  },
+  {
+   "code": "J82.83",
+   "display": "Eosinophilic asthma"
+  },
+  {
+   "code": "M25.561",
+   "display": "Pain in right knee"
+  },
+  {
+   "code": "M25.562",
+   "display": "Pain in left knee"
+  },
+  {
+   "code": "M25.569",
+   "display": "Pain in unspecified knee"
+  },
+  {
+   "code": "M51.362",
+   "display": "Other intervertebral disc degeneration, lumbar region with discogenic back pain and lower extremity pain"
+  },
+  {
+   "code": "M51.369",
+   "display": "Other intervertebral disc degeneration, lumbar region without mention of lumbar back pain or lower extremity pain"
+  },
+  {
+   "code": "M51.372",
+   "display": "Other intervertebral disc degeneration, lumbosacral region with discogenic back pain and lower extremity pain"
+  },
+  {
+   "code": "M54.50",
+   "display": "Low back pain, unspecified"
+  },
+  {
+   "code": "M54.51",
+   "display": "Vertebrogenic low back pain"
+  },
+  {
+   "code": "M54.59",
+   "display": "Other low back pain"
+  },
+  {
+   "code": "N39.0",
+   "display": "Urinary tract infection, site not specified"
+  },
+  {
+   "code": "N99.531",
+   "display": "Infection of continent stoma of urinary tract"
+  },
+  {
+   "code": "O03.38",
+   "display": "Urinary tract infection following incomplete spontaneous abortion"
+  },
+  {
+   "code": "O10.011",
+   "display": "Pre-existing essential hypertension complicating pregnancy, first trimester"
+  },
+  {
+   "code": "O10.012",
+   "display": "Pre-existing essential hypertension complicating pregnancy, second trimester"
+  },
+  {
+   "code": "O10.013",
+   "display": "Pre-existing essential hypertension complicating pregnancy, third trimester"
+  },
+  {
+   "code": "O10.02",
+   "display": "Pre-existing essential hypertension complicating childbirth"
+  },
+  {
+   "code": "O10.03",
+   "display": "Pre-existing essential hypertension complicating the puerperium"
+  },
+  {
+   "code": "O86.20",
+   "display": "Urinary tract infection following delivery, unspecified"
+  },
+  {
+   "code": "O86.29",
+   "display": "Other urinary tract infection following delivery"
+  },
+  {
+   "code": "P39.3",
+   "display": "Neonatal urinary tract infection"
+  },
+  {
+   "code": "P91.4",
+   "display": "Neonatal cerebral depression"
+  },
+  {
+   "code": "R05.1",
+   "display": "Acute cough"
+  },
+  {
+   "code": "R05.2",
+   "display": "Subacute cough"
+  },
+  {
+   "code": "R05.3",
+   "display": "Chronic cough"
+  },
+  {
+   "code": "R05.4",
+   "display": "Cough syncope"
+  },
+  {
+   "code": "R05.9",
+   "display": "Cough, unspecified"
+  },
+  {
+   "code": "R06.02",
+   "display": "Shortness of breath"
+  },
+  {
+   "code": "R07.1",
+   "display": "Chest pain on breathing"
+  },
+  {
+   "code": "R07.89",
+   "display": "Other chest pain"
+  },
+  {
+   "code": "R07.9",
+   "display": "Chest pain, unspecified"
+  },
+  {
+   "code": "R10.10",
+   "display": "Upper abdominal pain, unspecified"
+  },
+  {
+   "code": "R10.30",
+   "display": "Lower abdominal pain, unspecified"
+  },
+  {
+   "code": "R10.31",
+   "display": "Right lower quadrant pain"
+  },
+  {
+   "code": "R10.84",
+   "display": "Generalized abdominal pain"
+  },
+  {
+   "code": "R10.85",
+   "display": "Abdominal pain of multiple sites"
+  },
+  {
+   "code": "R10.9",
+   "display": "Unspecified abdominal pain"
+  },
+  {
+   "code": "R11.11",
+   "display": "Vomiting without nausea"
+  },
+  {
+   "code": "R11.2",
+   "display": "Nausea with vomiting, unspecified"
+  },
+  {
+   "code": "R21",
+   "display": "Rash and other nonspecific skin eruption"
+  },
+  {
+   "code": "R42",
+   "display": "Dizziness and giddiness"
+  },
+  {
+   "code": "R50.82",
+   "display": "Postprocedural fever"
+  },
+  {
+   "code": "R50.83",
+   "display": "Postvaccination fever"
+  },
+  {
+   "code": "R51.9",
+   "display": "Headache, unspecified"
+  },
+  {
+   "code": "R53.0",
+   "display": "Neoplastic (malignant) related fatigue"
+  },
+  {
+   "code": "R53.82",
+   "display": "Chronic fatigue, unspecified"
+  },
+  {
+   "code": "R53.83",
+   "display": "Other fatigue"
+  },
+  {
+   "code": "T67.6XXS",
+   "display": "Heat fatigue, transient, sequela"
+  },
+  {
+   "code": "Z13.31",
+   "display": "Encounter for screening for depression"
+  },
+  {
+   "code": "Z13.32",
+   "display": "Encounter for screening for maternal depression"
+  }
+ ]
+}

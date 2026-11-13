@@ -1,5 +1,5 @@
 import { demoApi } from "./demo/backend";
-import type { ApprovedRecord, IntakeRecord, Session, Vertical } from "./types";
+import type { ApprovedRecord, IntakeRecord, Session, Verification, Vertical } from "./types";
 
 /**
  * NEXT_PUBLIC_DEMO_MODE=1 swaps the HTTP client for an in-browser simulation of the backend
@@ -36,10 +36,25 @@ const httpApi = {
   createSession: (vertical: Vertical) =>
     request<Session>("/sessions", { method: "POST", body: JSON.stringify({ vertical }) }),
   getSession: (id: string) => request<Session>(`/sessions/${id}`),
-  approve: (id: string, record: IntakeRecord, exportTarget?: "fhir" | "clio") =>
+  approve: (
+    id: string,
+    record: IntakeRecord,
+    exportTarget?: "fhir" | "clio",
+    acknowledgedFlags?: string[],
+  ) =>
     request<{ status: string; record: ApprovedRecord }>(`/sessions/${id}/approve`, {
       method: "POST",
-      body: JSON.stringify({ record, export_target: exportTarget ?? null }),
+      body: JSON.stringify({
+        record,
+        export_target: exportTarget ?? null,
+        acknowledged_flags: acknowledgedFlags ?? [],
+      }),
+    }),
+  /** Reference-data checks on the stored record, or on the reviewer's edited copy. */
+  verify: (id: string, record?: IntakeRecord) =>
+    request<Verification>(`/sessions/${id}/verify`, {
+      method: "POST",
+      body: JSON.stringify({ record: record ?? null }),
     }),
   exportSession: (id: string, target: "fhir" | "clio") =>
     request<Record<string, unknown>>(`/sessions/${id}/export?target=${target}`, {

@@ -97,3 +97,101 @@ export type ClientMessage =
   | { type: "text"; text: string }
   | { type: "finish" }
   | { type: "ping" };
+
+// ---------------------------------------------------------------------------
+// Verification (backend/intakeagent/verify, POST /sessions/{id}/verify)
+// ---------------------------------------------------------------------------
+
+/** A code from a standard terminology, shaped like a FHIR Coding. */
+export interface Coding {
+  system: string;
+  code: string;
+  display: string;
+}
+
+/**
+ * Codes the reviewer accepted, keyed by the exact text they code. Sent as `record.codes`
+ * (PatientIntake.codes). Editing the text afterwards drops the stale code at export.
+ */
+export interface ReviewerCodes {
+  medications: Record<string, Coding>;
+  allergies: Record<string, Coding>;
+  chief_complaint: Record<string, Coding>;
+  conditions: Record<string, Coding>;
+}
+
+export interface VerificationFlag {
+  id: string;
+  kind: "allergy_ingredient" | "allergy_class" | "sanctions_match";
+  severity: "high" | "warning";
+  title: string;
+  detail: string;
+  fields: string[];
+}
+
+export interface DrugCheck {
+  input: string;
+  status: "matched" | "no_match" | "error" | "not_a_drug" | "drug_class";
+  match: Coding | null;
+  ingredients?: Coding[];
+  classes?: string[];
+  confidence?: number;
+}
+
+export interface IcdCheck {
+  input: string;
+  query: string;
+  suggestions: Coding[];
+  status: "matched" | "no_match";
+}
+
+export interface SanctionsMatch {
+  entry_id: string;
+  list: string;
+  listed_name: string;
+  matched_name: string;
+  type: string;
+  program: string;
+  score: number;
+}
+
+export interface SanctionsResult {
+  name: string;
+  role: string;
+  status: "clear" | "possible_match" | "strong_match";
+  matches: SanctionsMatch[];
+}
+
+export interface SanctionsScreening {
+  status: "ok" | "unavailable";
+  list: {
+    name: string;
+    generated_at: string;
+    entry_count: number;
+    demo: boolean;
+    sources: string[];
+  } | null;
+  message?: string;
+  results: SanctionsResult[];
+}
+
+export interface VerificationSource {
+  name: string;
+  mode: "live" | "offline" | "local" | "demo";
+  as_of?: string | null;
+}
+
+export interface Verification {
+  vertical: Vertical;
+  checked_at?: string;
+  sources: VerificationSource[];
+  flags: VerificationFlag[];
+  errors?: string[];
+  // healthcare
+  medications?: DrugCheck[];
+  allergies?: DrugCheck[];
+  chief_complaint?: IcdCheck | null;
+  conditions?: IcdCheck[];
+  // legal
+  sanctions?: SanctionsScreening;
+}

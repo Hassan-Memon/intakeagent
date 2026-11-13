@@ -8,12 +8,14 @@
  * tab closes and never leaves the browser.
  */
 
+import { codesOf, withCodes } from "../codes";
 import type {
   ApprovedRecord,
   IntakeRecord,
   Session,
   SessionStatus,
   TranscriptSegment,
+  Verification,
   Vertical,
 } from "../types";
 import { exportClio, exportFhir } from "./exporters";
@@ -21,6 +23,7 @@ import { buildRecord, extractRecord, missingRequired } from "./extractor";
 import { CLOSERS, OPENERS, hintFor, nextQuestion } from "./questions";
 import { SAMPLES } from "./samples";
 import { FIELD_SPECS } from "./schemas";
+import { verifyRecord } from "./verify";
 
 interface StoredSession extends Omit<Session, "field_specs"> {
   questions_asked: string[];
@@ -217,8 +220,11 @@ function approveSync(
     fail(409, `session is ${row.status}`);
   }
   if (row.status === "recording") finishSync(state, id);
-  if (edits && Object.keys(edits).length) row.record = buildRecord(row.vertical, edits);
-  else row.record = buildRecord(row.vertical, row.record);
+  // buildRecord keeps only schema fields; reviewer codes (healthcare) ride along separately,
+  // the way PatientIntake.codes does on the backend.
+  const source = edits && Object.keys(edits).length ? edits : row.record;
+  row.record = buildRecord(row.vertical, source);
+  if (row.vertical === "healthcare") row.record = withCodes(row.record, codesOf(source));
   row.next_question = CLOSERS[row.vertical];
   row.next_field = null;
 
@@ -238,6 +244,13 @@ function approveSync(
   };
   state.records.push(approved);
   return { status: row.status, record: structuredClone(approved) };
+}
+
+function verifySync(state: DemoState, id: string, edits: IntakeRecord | null): Verification {
+  const row = getRow(state, id);
+  const source = edits ?? row.record;
+  if (!Object.keys(source).length) fail(409, "nothing to verify yet");
+  return verifyRecord(row.vertical, buildRecord(row.vertical, source));
 }
 
 function exportSync(state: DemoState, id: string, target: "fhir" | "clio"): Record<string, unknown> {
@@ -299,8 +312,11 @@ export const demoApi = {
   createSession: (vertical: Vertical) =>
     later(() => toSession(mutate((s) => createSessionSync(s, vertical)))),
   getSession: (id: string) => later(() => toSession(getRow(load(), id))),
+  // The backend also takes acknowledged flag ids and audits them; the demo has no audit trail.
   approve: (id: string, record: IntakeRecord, exportTarget?: "fhir" | "clio") =>
     later(() => mutate((s) => approveSync(s, id, record, exportTarget ?? null)), 300),
+  verify: (id: string, record?: IntakeRecord) =>
+    later(() => verifySync(load(), id, record ?? null), 350),
   exportSession: (id: string, target: "fhir" | "clio") =>
     later(() => mutate((s) => exportSync(s, id, target)), 500),
   listRecords: () =>

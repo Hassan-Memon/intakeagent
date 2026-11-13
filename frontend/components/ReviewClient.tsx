@@ -1,13 +1,33 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { DEMO_MODE, api } from "@/lib/api";
+import { codesOf, emptyCodes, withCodes, withoutCodes } from "@/lib/codes";
 import { vertLabel } from "@/lib/format";
-import type { IntakeRecord, Session } from "@/lib/types";
+import type { IntakeRecord, ReviewerCodes, Session, Verification } from "@/lib/types";
 import { RecordForm } from "./RecordForm";
 import { StatusPill } from "./StatusPill";
 import { TranscriptPanel } from "./TranscriptPanel";
+import { VerificationPanel } from "./VerificationPanel";
+
+/** Confident RxNorm matches start ticked; ICD-10 codes are always the reviewer's pick. */
+function preselectCodes(v: Verification, current: ReviewerCodes): ReviewerCodes {
+  const next = { ...current, medications: { ...current.medications }, allergies: { ...current.allergies } };
+  for (const c of v.medications ?? []) {
+    if (c.match && (c.confidence ?? 0) >= 0.9 && !(c.input in next.medications)) {
+      next.medications[c.input] = c.match;
+    }
+  }
+  for (const c of v.allergies ?? []) {
+    if (c.match && (c.confidence ?? 0) >= 0.9 && !(c.input in next.allergies)) {
+      next.allergies[c.input] = c.match;
+    }
+  }
+  return next;
+}
+
+const recordKey = (r: IntakeRecord) => JSON.stringify(withoutCodes(r));
 
 export function ReviewClient({ sessionId }: { sessionId: string }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -16,6 +36,31 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [exportResult, setExportResult] = useState<Record<string, unknown> | null>(null);
+  const [codes, setCodes] = useState<ReviewerCodes>(emptyCodes());
+  const [verification, setVerification] = useState<Verification | null>(null);
+  const [checkedKey, setCheckedKey] = useState<string>("");
+  const [verifyBusy, setVerifyBusy] = useState(false);
+  const [verifyError, setVerifyError] = useState<string | null>(null);
+  const [acknowledged, setAcknowledged] = useState(false);
+
+  const runChecks = useCallback(
+    async (id: string, edited: IntakeRecord | undefined, preselect: boolean) => {
+      setVerifyBusy(true);
+      setVerifyError(null);
+      try {
+        const v = await api.verify(id, edited);
+        setVerification(v);
+        setCheckedKey(edited ? recordKey(edited) : "");
+        setAcknowledged(false);
+        if (preselect) setCodes((c) => preselectCodes(v, c));
+      } catch (e) {
+        setVerifyError(e instanceof Error ? e.message : "Checks failed");
+      } finally {
+        setVerifyBusy(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     api
@@ -23,9 +68,15 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
       .then((s) => {
         setSession(s);
         setRecord(s.record);
+        const existing = codesOf(s.record);
+        setCodes(existing);
+        if (Object.keys(s.record).length) {
+          const done = s.status === "approved" || s.status === "exported";
+          void runChecks(s.id, s.record, !done);
+        }
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : "Session not found"));
-  }, [sessionId]);
+  }, [sessionId, runChecks]);
 
   // Recompute "missing" locally as the reviewer edits, so the badges update live.
   const missing = useMemo(() => {
@@ -52,15 +103,21 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
     });
   }
 
+  const flags = verification?.flags ?? [];
+  const stale = Boolean(verification) && checkedKey !== "" && checkedKey !== recordKey(record);
+  const needsAck = flags.length > 0 && !acknowledged;
+
   async function approve() {
-    if (!session) return;
+    if (!session || needsAck) return;
     setBusy("approve");
     setError(null);
     try {
-      await api.approve(session.id, record);
+      const toSend = session.vertical === "healthcare" ? withCodes(record, codes) : record;
+      await api.approve(session.id, toSend, undefined, flags.map((f) => f.id));
       const fresh = await api.getSession(session.id);
       setSession(fresh);
       setRecord(fresh.record);
+      setCodes(codesOf(fresh.record));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Approval failed");
     } finally {
@@ -137,30 +194,56 @@ export function ReviewClient({ sessionId }: { sessionId: string }) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-5">
-        <section className="card lg:col-span-3">
-          <p className="mb-4 text-sm text-ink-soft">
-            Hover the <span className="font-semibold">i</span> next to a field to see the transcript
-            it came from. Edit anything that is wrong, then approve.
-          </p>
-          <RecordForm
-            specs={session.field_specs}
-            record={record}
-            missing={missing}
+        <div className="space-y-6 lg:col-span-3">
+          <VerificationPanel
+            verification={verification}
+            codes={codes}
+            onCodesChange={setCodes}
             readOnly={approved}
-            onChange={onChange}
-            onHoverEvidence={setHighlight}
+            busy={verifyBusy}
+            stale={stale}
+            error={verifyError}
+            onRerun={() => void runChecks(session.id, record, true)}
           />
-        </section>
+          <section className="card">
+            <p className="mb-4 text-sm text-ink-soft">
+              Hover the <span className="font-semibold">i</span> next to a field to see the transcript
+              it came from. Edit anything that is wrong, then approve.
+            </p>
+            <RecordForm
+              specs={session.field_specs}
+              record={record}
+              missing={missing}
+              readOnly={approved}
+              onChange={onChange}
+              onHoverEvidence={setHighlight}
+            />
+          </section>
+        </div>
 
         <aside className="space-y-6 lg:col-span-2">
           <div className="card space-y-3">
             <p className="label">Actions</p>
             {!approved ? (
               <>
+                {flags.length > 0 && (
+                  <label className="flex items-start gap-2 rounded-xl bg-warn-soft px-3 py-2 text-sm text-warn">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 h-4 w-4 accent-warn"
+                      checked={acknowledged}
+                      onChange={(e) => setAcknowledged(e.target.checked)}
+                    />
+                    <span>
+                      I have reviewed the {flags.length} flag{flags.length === 1 ? "" : "s"} from the
+                      reference checks. (Recorded in the audit trail.)
+                    </span>
+                  </label>
+                )}
                 <button
                   type="button"
                   onClick={approve}
-                  disabled={busy !== null}
+                  disabled={busy !== null || needsAck}
                   className="btn-primary w-full"
                 >
                   {busy === "approve" ? "Approving..." : "Approve record"}

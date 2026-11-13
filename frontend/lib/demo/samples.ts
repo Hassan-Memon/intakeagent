@@ -34,7 +34,9 @@ export const SAMPLES: Record<Vertical, SampleLine[]> = {
       answers: ["chief_complaint", "symptom_onset", "symptom_severity"],
     },
     {
-      text: "I take metformin 500 milligrams twice a day and lisinopril 10 milligrams every morning.",
+      text:
+        "I take metformin 500 milligrams twice a day, lisinopril 10 milligrams every morning " +
+        "and amoxicillin 500 milligrams three times a day.",
       answers: ["medications"],
     },
     {

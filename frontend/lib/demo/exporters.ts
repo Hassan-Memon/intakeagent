@@ -5,7 +5,9 @@
  * FHIR result is always a dry run and the Clio result is always a mock with fake ids.
  */
 
-import type { IntakeRecord } from "../types";
+import { codesOf } from "../codes";
+import type { Coding, IntakeRecord, SanctionsScreening } from "../types";
+import { screenRecord } from "./verify";
 
 type Json = Record<string, unknown>;
 
@@ -66,7 +68,14 @@ const CLINICAL = "http://terminology.hl7.org/CodeSystem/condition-clinical";
 const CATEGORY = "http://terminology.hl7.org/CodeSystem/condition-category";
 
 /** build_bundle(): FHIR R4 transaction Bundle from a PatientIntake-shaped record. */
+/** CodeableConcept: the patient's words as text, plus a reviewer-accepted coding if any. */
+function concept(text: string, codes: Record<string, Coding>): Json {
+  const coding = codes[text];
+  return coding ? { text, coding: [coding] } : { text };
+}
+
 export function buildBundle(record: IntakeRecord, sessionId: string): Json {
+  const codes = codesOf(record);
   const now = new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
   const patientUrl = urn();
   const encounterUrl = urn();
@@ -110,7 +119,7 @@ export function buildBundle(record: IntakeRecord, sessionId: string): Json {
         },
         subject: { reference: patientUrl },
         period: { start: now },
-        reasonCode: complaint ? [{ text: complaint }] : null,
+        reasonCode: complaint ? [concept(complaint, codes.chief_complaint)] : null,
       }),
       encounterUrl,
     ),
@@ -124,7 +133,7 @@ export function buildBundle(record: IntakeRecord, sessionId: string): Json {
           resourceType: "Condition",
           clinicalStatus: { coding: [{ system: CLINICAL, code: "active" }] },
           category: [{ coding: [{ system: CATEGORY, code: "encounter-diagnosis" }] }],
-          code: { text: complaint },
+          code: concept(complaint, codes.chief_complaint),
           subject: { reference: patientUrl },
           encounter: { reference: encounterUrl },
           onsetString: str(record, "symptom_onset"),
@@ -143,7 +152,7 @@ export function buildBundle(record: IntakeRecord, sessionId: string): Json {
           resourceType: "Condition",
           clinicalStatus: { coding: [{ system: CLINICAL, code: "active" }] },
           category: [{ coding: [{ system: CATEGORY, code: "problem-list-item" }] }],
-          code: { text: String(name) },
+          code: concept(String(name), codes.conditions),
           subject: { reference: patientUrl },
         },
         urn(),
@@ -167,7 +176,7 @@ export function buildBundle(record: IntakeRecord, sessionId: string): Json {
               },
             ],
           },
-          code: { text: substance },
+          code: concept(substance, codes.allergies),
           patient: { reference: patientUrl },
           reaction: reaction ? [{ manifestation: [{ text: reaction }] }] : null,
         }),
@@ -186,7 +195,7 @@ export function buildBundle(record: IntakeRecord, sessionId: string): Json {
         compact({
           resourceType: "MedicationStatement",
           status: "active",
-          medicationCodeableConcept: { text: name },
+          medicationCodeableConcept: concept(name, codes.medications),
           subject: { reference: patientUrl },
           context: { reference: encounterUrl },
           dosage: dosageText ? [{ text: dosageText }] : null,
@@ -245,7 +254,32 @@ export function buildContactPayload(record: IntakeRecord): Json {
   return { data };
 }
 
-export function buildMatterPayload(record: IntakeRecord, clientId: number): Json {
+/** screening_summary(): one line per party for the matter description. */
+function screeningSummary(screening: SanctionsScreening): string[] {
+  if (screening.status !== "ok" || !screening.list) {
+    return ["Sanctions screening: not run (no list loaded)."];
+  }
+  const lines = [
+    `Sanctions screening against ${screening.list.name} (as of ${screening.list.generated_at}):`,
+  ];
+  for (const r of screening.results) {
+    const top = r.matches[0];
+    if (r.status === "clear" || !top) lines.push(`  ${r.name} (${r.role}): no match`);
+    else {
+      lines.push(
+        `  ${r.name} (${r.role}): ${r.status.replace("_", " ")} to ${top.matched_name} ` +
+          `[${top.list}], score ${top.score.toFixed(2)}`,
+      );
+    }
+  }
+  return lines;
+}
+
+export function buildMatterPayload(
+  record: IntakeRecord,
+  clientId: number,
+  screening?: SanctionsScreening,
+): Json {
   const lines = [str(record, "matter_description") ?? "Intake via IntakeAgent."];
   const opposing = str(record, "opposing_party");
   const jurisdiction = str(record, "jurisdiction");
@@ -257,6 +291,7 @@ export function buildMatterPayload(record: IntakeRecord, clientId: number): Json
     lines.push(`Key date: ${String(kd.label ?? "")}: ${String(kd.date ?? "")}`);
   }
   if (urgency) lines.push(`Urgency: ${urgency}`);
+  if (screening) lines.push(...screeningSummary(screening));
   const data: Json = {
     client: { id: clientId },
     description: lines.join("\n"),
@@ -288,7 +323,8 @@ export function exportClio(record: IntakeRecord, sessionId: string): Json {
     mode: "mock",
   }));
   const contactId = 100000 + (hash(sessionId) % 899999);
-  const matterPayload = buildMatterPayload(record, contactId);
+  const screening = screenRecord(record);
+  const matterPayload = buildMatterPayload(record, contactId, screening);
   return {
     target: "clio",
     mode: "mock",
@@ -300,6 +336,7 @@ export function exportClio(record: IntakeRecord, sessionId: string): Json {
       ...(matterPayload.data as Json),
     },
     conflict_check: conflicts,
+    sanctions_screening: screening,
     payloads: { contact: contactPayload, matter: matterPayload },
   };
 }
