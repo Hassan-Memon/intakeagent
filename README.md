@@ -42,28 +42,28 @@ your own inference box.
 ```mermaid
 flowchart LR
   subgraph Browser["Next.js 15 (Vercel free)"]
-    Mic[MediaRecorder\n5s WebM/Opus segments] --> WS[WebSocket client]
-    Review[Review form\nevidence tooltips]
+    Mic["MediaRecorder<br/>5s WebM/Opus segments"] --> WS["WebSocket client"]
+    Review["Review form<br/>evidence tooltips, reference checks"]
   end
   subgraph Backend["FastAPI (Render free / Docker)"]
-    WSE[/ws/intake/{id}/] --> STT{STT provider}
-    STT -->|stub / Groq Whisper / faster-whisper| Graph
+    WSE["/ws/intake/{id}"] --> STT{"STT provider"}
+    STT -->|"stub / Groq Whisper / faster-whisper"| M
     subgraph Graph["LangGraph intake graph"]
-      M[merge_transcript] --> E[extract] --> D[detect_missing]
-      D -->|missing, not finished| Q[ask_next_question]
-      D -->|finished| V[verify\nreference checks]
-      V --> H[await_approval\ninterrupt]
-      H --> X[export]
+      M["merge_transcript"] --> E["extract"] --> D["detect_missing"]
+      D -->|"missing, not finished"| Q["ask_next_question"]
+      D -->|"finished"| V["verify<br/>reference checks"]
+      V --> H["await_approval<br/>interrupt"]
+      H --> X["export"]
     end
-    V -. drug names,\ncomplaint keywords .-> NLM[(NLM RxNav, RxClass,\nClinical Tables\nor bundled snapshot)]
-    V -. matched locally .-> SL[(OFAC + UN\nsanctions lists)]
-    E -. redact before\nnon-local LLM .-> LLM[(LLM\nOllama / OpenInfer / Groq)]
-    Q -. protocol hint .-> RAG[(pgvector\nprotocol snippets)]
-    REST[/REST: sessions, approve, export, records/]
+    V -. "drug names, complaint keywords" .-> NLM[("NLM RxNav, RxClass, Clinical Tables<br/>or bundled snapshot")]
+    V -. "matched locally" .-> SL[("OFAC + UN<br/>sanctions lists")]
+    E -. "redact before non-local LLM" .-> LLM[("LLM<br/>Ollama / OpenInfer / Groq")]
+    Q -. "protocol hint" .-> RAG[("pgvector<br/>protocol snippets")]
+    REST["REST: sessions, verify, approve, export, records"]
   end
-  X --> FHIR[(FHIR R4 server\nHAPI sandbox)]
-  X --> Clio[(Clio API v4)]
-  Backend --> PG[(Postgres + pgvector\nNeon free)]
+  X --> FHIR[("FHIR R4 server<br/>HAPI sandbox")]
+  X --> Clio[("Clio API v4")]
+  Backend --> PG[("Postgres + pgvector<br/>Neon free")]
   WS <--> WSE
   Review <--> REST
 ```
