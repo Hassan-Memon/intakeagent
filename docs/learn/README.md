@@ -15,5 +15,6 @@ real files in this repository.
    - [PHI redaction and local-first LLM](03-concepts/phi-redaction-and-local-first-llm.md)
    - [Next.js App Router and browser media APIs](03-concepts/nextjs-app-router-and-browser-media-apis.md)
    - [SQLModel and pgvector](03-concepts/sqlmodel-and-pgvector.md)
+   - [Reference-data verification (RxNorm, ICD-10-CM, sanctions lists)](03-concepts/reference-data-verification.md)
 4. [Interview talk track](04-interview-talk-track.md): 2 minute and 15 minute versions, numbers, likely questions
 5. [Run it yourself](05-run-it-yourself.md): break it, extend it, observe it

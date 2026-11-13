@@ -14,7 +14,7 @@ their v4 API with a conflict check for legal.
 Two design commitments: human approval enforced in the graph topology, and local-first PHI
 handling. The LLM runs on Ollama or an OpenInfer box tagged private by default; any opt-in
 cloud call sees a redacted transcript that is re-hydrated locally. It runs with zero API keys
-in demo mode, has forty offline tests, and deploys free on Vercel, Render and Neon."
+in demo mode, has sixty-nine offline backend tests, and deploys free on Vercel, Render and Neon."
 
 ## The fifteen-minute version
 
@@ -22,7 +22,7 @@ Walk the README sequence diagram, then go one layer deeper on each:
 
 1. **Transport (3 min).** WebSocket not WebRTC (ADR-0001); complete files not a byte stream
    (ADR-0005); the `audio_meta` + binary pair; error frames keep the socket alive.
-2. **Graph (4 min).** `operator.add` reducers; six nodes; conditional edge on `finished`;
+2. **Graph (4 min).** `operator.add` reducers; seven nodes including `verify`; conditional edge on `finished`;
    `interrupt()` and `Command(resume=...)`; checkpointer per session; rehydration from Postgres;
    `with_structured_output`, evidence spans, merge with previous, fallback to rules.
 3. **Schemas (2 min).** `Extracted[T]`; `json_schema_extra` metadata drives the missing-field
@@ -33,10 +33,32 @@ Walk the README sequence diagram, then go one layer deeper on each:
    code flow; mock-transport tests.
 6. **Operations (1 min).** What breaks first at 10x; idempotency on export retries.
 
+## Reference checks (two minutes)
+
+"Before approval, a `verify` node checks the record against public reference data. Medications
+are coded to RxNorm and cross-checked against allergies by ingredient and drug class, so a
+penicillin allergy plus amoxicillin raises a flag. The chief complaint gets ICD-10-CM
+suggestions. For legal, every party is screened against OFAC and UN sanctions lists, matched
+locally so no client name leaves the firm. Everything is a suggestion: codes reach the FHIR
+export only if the reviewer ticks them, and flags must be acknowledged, which is audited."
+
+The interesting part is what live data broke:
+
+- **`ci_chemclass`.** MED-RT's relation means "contraindicated with", not "is a"; Augmentin
+  briefly had "Disulfiram" as a class. Now only DailyMed `has_epc` and `has_chemical_structure`.
+- **Retired candidates.** The rank-1 RxNav match for "Bactrim DS" is a retired MMSL concept
+  with no ingredients. Prefer current RXNORM-sourced candidates.
+- **"sulfa drugs" became "Supra Sulfa".** Class allergies are now matched by class, never
+  coded as a product.
+- **"Motrin 400".** A strength without a unit found nothing; retry with bare numbers removed.
+
+Each has a regression test, and the live client is tested offline with `httpx.MockTransport`
+using the real response shapes.
+
 ## Numbers to quote
 
-- 6 graph nodes, 2 verticals, 14 and 12 schema fields, 7 FHIR resource types.
-- 40 offline tests in 10 to 15 seconds; 5 frontend routes, 104 to 111 KB first-load JS.
+- 7 graph nodes (including `verify`), 2 verticals, 14 and 12 schema fields, 7 FHIR resource types.
+- 69 offline backend tests in 20 to 30 seconds; 5 frontend routes, 104 to 111 KB first-load JS.
 - 5-second segments, 80 to 120 KB each as Opus; 8 MB frame cap.
 - faster-whisper `base` on CPU roughly real time; Groq whisper-large-v3 under 1 s.
 - Zero required API keys; three optional free ones.

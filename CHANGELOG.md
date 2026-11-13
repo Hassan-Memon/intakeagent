@@ -4,6 +4,46 @@ All notable changes to IntakeAgent are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Reference checks before review** (`backend/intakeagent/verify/`, ADR-0007). A new `verify`
+  graph node runs between `detect_missing` and the approval interrupt, and
+  `POST /sessions/{id}/verify` re-runs it on the reviewer's edited record.
+  - Medications and allergies are resolved to RxNorm with ingredients and DailyMed
+    pharmacologic classes. A medication is flagged when it shares an ingredient with a reported
+    allergen, belongs to a class the allergy names ("penicillin", "sulfa", "NSAIDs"), or
+    shares a class with it.
+  - The chief complaint and conditions get ICD-10-CM suggestions. Lay wording is rewritten
+    first ("lower right side" becomes "right lower quadrant").
+  - Data comes from the U.S. National Library of Medicine's free RxNav, RxClass and Clinical
+    Tables APIs, with a bundled snapshot generated from them
+    (`python -m intakeagent.verify.terminology snapshot`) for demo mode, tests and outages.
+  - Legal intakes screen the client, opposing party and conflict-check names against OFAC SDN,
+    OFAC Consolidated and the UN Consolidated List, downloaded with
+    `python -m intakeagent.verify.sanctions refresh` and matched locally with fuzzy,
+    token-based scoring.
+- `PatientIntake.codes`: RxNorm and ICD-10-CM codes the reviewer accepted, keyed by the text
+  they code. The FHIR exporter adds them as `coding` next to the patient's words.
+- The Clio export re-screens at export time and records the result on the matter description
+  and in `sanctions_screening`.
+- `acknowledged_flags` on approve, written to the `record.approved` audit event, plus a
+  `record.verified` audit event for every check.
+- Review screen: a "Reference checks" panel with flags, code suggestions to tick or pick,
+  sanctions results and a re-run button. Approving past a flag needs an explicit
+  acknowledgement.
+- The browser demo runs the same checks in `lib/demo/verify.ts` on the same snapshot and a
+  fictional sanctions list, so nothing leaves the page. A backend test keeps the data copies
+  identical.
+- Settings `TERMINOLOGY_PROVIDER` (`auto`, `nlm` or `offline`) and `SANCTIONS_LIST_PATH`;
+  `/health` reports both.
+- 29 new tests (69 in total), including the live NLM client against canned responses.
+
+### Changed
+- The sample patient also takes amoxicillin, so the demo shows the penicillin-allergy flag.
+- The language-model extractor discards any `codes` it returns: codes come only from a
+  reviewer accepting reference data.
+
 ## [0.1.0] - 2026-11-10
 
 First public release. This repository previously held a 2020 Django weather app. Its history

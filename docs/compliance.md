@@ -45,6 +45,18 @@ database provider's encryption at rest and your network boundary are what protec
 - **FHIR.** `FHIR_PUSH=1` posts to whatever `FHIR_BASE_URL` points at. The default is the
   public HAPI sandbox, which is for synthetic data only and must never receive real PHI.
 - **Clio.** Live mode posts to Clio's API; Clio is the law firm's processor under its own terms.
+- **Clinical reference checks (NLM).** With `TERMINOLOGY_PROVIDER=nlm` (the default when
+  `DEMO_MODE=0`), the backend sends **medication and allergy names**, and a stop-word-stripped
+  keyword form of the **chief complaint and conditions**, to the U.S. National Library of
+  Medicine's public RxNav and Clinical Tables APIs. It never sends names, dates of birth,
+  contact details, insurance identifiers or the transcript. A drug name on its own is not an
+  identifier, but a complaint phrase can occasionally contain one ("pain since John's
+  accident"), so treat this as a minimum-necessary disclosure and assess it in your risk
+  analysis. NLM is a U.S. federal service; for UAE, KSA or EU data-residency requirements, set
+  `TERMINOLOGY_PROVIDER=offline` to use the bundled snapshot and make no calls at all.
+- **Sanctions screening.** Lists are downloaded from OFAC and the UN (public data) and every
+  comparison runs inside the backend. No client or party name leaves the process. The
+  screening result is stored in the audit trail and on the Clio matter description.
 
 ## GDPR and UK GDPR
 
@@ -98,7 +110,14 @@ in design terms.
 - Validates every record against a typed schema and every FHIR resource against the R4 profile.
 - Requires a human to approve before anything is exported; the graph cannot reach `export`
   without passing through the `interrupt()` in `await_approval`.
-- Writes an application audit trail of session and record lifecycle events.
+- Writes an application audit trail of session and record lifecycle events, including every
+  reference check (`record.verified`: flag ids, sources) and the flags a reviewer acknowledged
+  when approving.
+- Checks medications against reported allergies by ingredient and drug class and offers RxNorm
+  and ICD-10-CM codes as suggestions. Codes are added only when a reviewer accepts them, and
+  the language model is never allowed to produce them.
+- Screens client, opposing-party and conflict-check names against OFAC and UN sanctions lists
+  locally before a matter is opened, and reports clearly when no list is loaded.
 - Stores evidence spans so reviewers can verify each value against the transcript.
 - Runs entirely offline in `DEMO_MODE` so demos never involve real data or external services.
 
@@ -113,6 +132,13 @@ in design terms.
 - Provide BAAs, DPAs or any contractual artefacts; those are between you and your vendors.
 - Apply regional FHIR profiles (US Core, UK Core, Saudi Core).
 - Sign or verify exported payloads.
+- Provide clinical decision support. The allergy cross-check is a reference lookup that a person
+  must confirm. It does not check dose, drug-drug interactions or cross-reactivity between
+  classes (for example penicillin and cephalosporins).
+- Constitute a complete sanctions or AML programme. Screening covers OFAC SDN, OFAC
+  Consolidated and the UN Consolidated List by name only. It does not cover the UK, EU or
+  national lists, PEP lists, adverse media, or ownership (the 50 percent rule). The list is
+  only as fresh as the last `refresh`; schedule it.
 
 ## Deployment checklist for real data
 
@@ -123,3 +149,7 @@ in design terms.
 5. Retention policy implemented as a scheduled job; erasure runbook covering downstream systems.
 6. Audit events shipped to immutable storage.
 7. Risk analysis / DPIA on file, BAAs or DPAs executed with each processor.
+8. `TERMINOLOGY_PROVIDER` chosen deliberately (`nlm`, or `offline` where data must stay
+   in-region), and a scheduled job running
+   `python -m intakeagent.verify.sanctions refresh` (daily is typical) with `SANCTIONS_LIST_PATH`
+   pointing at its output.

@@ -11,13 +11,14 @@ transition (for example audio after finish, export before approval), `422` valid
 
 | Method | Path | Body / query | Returns |
 | --- | --- | --- | --- |
-| `GET` | `/health` | | provider summary: `demo_mode`, `llm`, `stt`, `clio_mode` |
+| `GET` | `/health` | | provider summary: `demo_mode`, `llm`, `stt`, `clio_mode`, `terminology`, `sanctions_list` |
 | `POST` | `/sessions` | `{"vertical": "healthcare" \| "legal"}` | session object (`201`) |
 | `GET` | `/sessions` | | recent sessions |
 | `GET` | `/sessions/{id}` | | session object |
 | `POST` | `/sessions/{id}/text` | `{"text": "..."}` | `{record, missing_fields, next_question, next_field}` (typed fallback) |
 | `POST` | `/sessions/{id}/finish` | | `{status, missing_fields, interrupt}` |
-| `POST` | `/sessions/{id}/approve` | `{"record"?: {...}, "export_target"?: "fhir" \| "clio", "approved_by"?: "..."}` | `{status, record}` |
+| `POST` | `/sessions/{id}/verify` | `{"record"?: {...}}` (omit to check the stored record) | verification object (read-only, audited) |
+| `POST` | `/sessions/{id}/approve` | `{"record"?: {...}, "export_target"?: "fhir" \| "clio", "approved_by"?: "...", "acknowledged_flags"?: ["flag id", ...]}` | `{status, record}` |
 | `POST` | `/sessions/{id}/export?target=fhir\|clio` | | exporter result |
 | `GET` | `/sessions/{id}/audit` | | audit events |
 | `GET` | `/records` | | approved records, newest first |
@@ -50,6 +51,61 @@ into `transcript` (segments joined by a single space). The review UI uses them t
 source. Lists (`medications`, `allergies`, `key_dates`, `conditions`, `conflict_check_names`)
 carry arrays in `value`.
 
+`PatientIntake` has one field that is not extracted: `codes`, the RxNorm and ICD-10-CM codes a
+reviewer accepted. Each map is keyed by the exact text it codes:
+
+```json
+"codes": {
+  "medications": {"metformin": {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "6809", "display": "metformin"}},
+  "allergies": {},
+  "chief_complaint": {"sharp pain in my lower right side": {"system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "R10.31", "display": "Right lower quadrant pain"}},
+  "conditions": {}
+}
+```
+
+The FHIR exporter adds a matching code as `coding` next to the original `text`. If the text was
+edited after the code was accepted, the keys no longer match and only the text is exported.
+
+### Verification object
+
+Returned by `POST /sessions/{id}/verify` and included as `verification` in the `finish`
+interrupt payload. Every vertical has `vertical`, `checked_at`, `sources` (`[{name, mode}]`,
+where `mode` is `live`, `offline`, `local` or `demo`), `flags` and `errors`.
+
+```json
+{
+  "flags": [{
+    "id": "allergy_class:penicillin:amoxicillin",
+    "kind": "allergy_class",
+    "severity": "warning",
+    "title": "amoxicillin may conflict with the reported penicillin allergy",
+    "detail": "amoxicillin is in the class “Penicillins” (RxNorm/RxClass). Confirm with ...",
+    "fields": ["medications", "allergies"]
+  }],
+  "medications": [{"input": "amoxicillin", "status": "matched", "match": {"system": "...rxnorm", "code": "723", "display": "amoxicillin"}, "ingredients": [...], "classes": ["Penicillins", "Penicillin-class Antibacterial"], "confidence": 1.0}],
+  "allergies": [{"input": "penicillin", "status": "drug_class", "match": null, "classes": ["penicillin"]}],
+  "chief_complaint": {"input": "sharp pain in my lower right side", "query": "pain right lower quadrant", "suggestions": [{"system": "...icd-10-cm", "code": "R10.31", "display": "Right lower quadrant pain"}], "status": "matched"},
+  "conditions": [...]
+}
+```
+
+Flag kinds are `allergy_ingredient` (severity `high`), `allergy_class` and `sanctions_match`
+(`high` for a strong match). Drug `status` is one of `matched`, `no_match`, `error`,
+`not_a_drug` and `drug_class`. Legal verification replaces the clinical keys with `sanctions`:
+
+```json
+"sanctions": {
+  "status": "ok",
+  "list": {"name": "OFAC SDN + OFAC Consolidated + UN Consolidated", "generated_at": "...", "entry_count": 21056, "demo": false, "sources": ["OFAC SDN", "..."]},
+  "results": [{"name": "Northwind Logistics", "role": "opposing party", "status": "possible_match",
+               "matches": [{"entry_id": "...", "list": "...", "listed_name": "...", "matched_name": "...", "type": "entity", "program": "...", "score": 0.912}]}]
+}
+```
+
+`status` is `unavailable` (with a `message`) when no list is loaded. It is never reported as
+`clear` in that case. Per-name `status` is `clear`, `possible_match` (score 0.85 or more) or
+`strong_match` (0.97 or more).
+
 ## WebSocket: `/ws/intake/{session_id}`
 
 One connection per session. Text frames carry JSON; binary frames carry audio. Frames are
@@ -76,7 +132,7 @@ Connection is refused with close code `4404` when the session does not exist.
 | `transcript` | `segment` | One final segment with session-relative `start_ms`/`end_ms`. |
 | `extraction` | `record`, `missing_fields` | Updated structured record after each turn. |
 | `question` | `text`, `field` | The agent's next question and the field it targets (null when done). |
-| `awaiting_approval` | `session_id`, `record`, `missing_fields`, `review_url` | After `finish`. Client navigates to the review screen. |
+| `awaiting_approval` | `session_id`, `record`, `missing_fields`, `review_url` | After `finish`. Client navigates to the review screen, which fetches checks with `POST /sessions/{id}/verify`. |
 | `error` | `code`, `message` | `too_large`, `stt_failed`, `invalid_state`, `bad_json`, `unknown_type`. The connection stays open. |
 | `pong` | | Reply to `ping`. |
 

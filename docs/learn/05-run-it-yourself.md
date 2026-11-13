@@ -23,6 +23,26 @@ codings versus structure.
 add `print(graph.get_state(cfg))` before and after the resume and run with `-s`. Find the
 pending task and the `__interrupt__` payload.
 
+**4a. See the reference checks.** In the demo (or `docker compose up`), play the sample
+patient and press "Finish and review". The panel flags amoxicillin against the penicillin
+allergy, ticks the confident RxNorm matches and offers R10.31 for "sharp pain in my lower right
+side". Tick it, acknowledge the flag, approve, export, and find the `coding` arrays in the
+Bundle. Play the sample client instead: the screening table shows "Northwind Logistics" as a
+possible match to the fictional "NORTHWIND LOGISTIX". Then call `POST /sessions/<id>/verify`
+with an edited record (amoxicillin removed) and watch the flag disappear.
+
+**4b. Run the tests.** `cd backend && uv run pytest` runs 69 offline tests;
+`tests/test_verify.py` covers coding, allergy rules, ICD ranking, sanctions parsing and
+matching, and the NLM client against a mock transport.
+
+**4c. Use real data.** Set `DEMO_MODE=0`. `TERMINOLOGY_PROVIDER=auto` (or `nlm`) calls NLM
+live with the snapshot as fallback; `offline` forces the snapshot. Download sanctions lists
+with `uv run python -m intakeagent.verify.sanctions refresh --out data/sanctions.json` and set
+`SANCTIONS_LIST_PATH` to that file; without it, screening reports "unavailable". Try
+`uv run python -m intakeagent.verify.sanctions screen "Banco Nacional de Cuba" --list
+data/sanctions.json`. Regenerate the terminology snapshot (backend and frontend copies) with
+`uv run python -m intakeagent.verify.terminology snapshot`.
+
 ## Break it
 
 **5. Kill the backend mid-intake.** Start a session in the UI, send two typed lines, stop the
@@ -40,6 +60,11 @@ Remove the status check in `IntakeService.approve` and see the duplicate `intake
 **8. Exhaust the threadpool.** Add `time.sleep(10)` inside `RuleBasedExtractor.extract`, open
 50 WebSocket connections with a script and send one text frame each. Watch REST calls stall.
 Then move graph execution to a dedicated `ThreadPoolExecutor` and compare.
+
+**8a. Starve the verifier.** With `DEMO_MODE=0`, point `SANCTIONS_LIST_PATH` at a missing file
+and finish a legal intake: the panel must say screening did not run, not "clear". Then block
+`rxnav.nlm.nih.gov` (hosts file) and finish a healthcare intake: the sources line should read
+"bundled snapshot".
 
 **9. Make redaction miss.** Add a transcript line with a name that has no introduction phrase
 ("Spoke with Tariq earlier."). Run `redact()` on it. Write a new pattern or wire up Presidio

@@ -11,3 +11,4 @@ decision, numbered, never edited after acceptance except to mark them superseded
 | [0004](ADR-0004-mandatory-hitl.md) | Mandatory human approval via LangGraph interrupt | accepted |
 | [0005](ADR-0005-segmented-media-recorder.md) | Segmented MediaRecorder uploads instead of a byte stream | accepted |
 | [0006](ADR-0006-sqlmodel-pgvector-first.md) | SQLModel on Postgres with pgvector before a dedicated vector DB | accepted |
+| [0007](ADR-0007-reference-data-verification.md) | Reference-data checks as reviewer suggestions, with offline fallbacks | accepted |

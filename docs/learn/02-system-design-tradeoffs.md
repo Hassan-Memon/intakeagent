@@ -34,6 +34,20 @@ has `status` for this.
 | FHIR server rejects the Bundle | Response stored, status still `exported` | Treat non-2xx as failed, keep `approved`, show the OperationOutcome |
 | Clio token expired | Export errors | Call `ClioOAuthClient.refresh` on 401 and persist the token |
 
+## Reference checks: where the data comes from
+
+| Choice | Taken | Alternative and why not |
+| --- | --- | --- |
+| Live NLM vs bundled snapshot | Live NLM in production, snapshot in DEMO_MODE and tests, snapshot as fallback when NLM fails | Snapshot only: always offline but stale and limited to 34 drugs. Live only: an NLM outage would empty the review panel |
+| Rate limits | NLM asks for under 20 requests per second per IP; one intake makes a few dozen calls, cached in process | A shared cache (Redis) once several replicas verify at once |
+| Latency | About 5 s at "finish" with live NLM (several sequential calls per drug), well under a second on the snapshot | Run lookups concurrently, or verify incrementally after each turn |
+| Sanctions matching | Download the lists, match locally | A screening API: better entity resolution, but every client name leaves the firm |
+| Fuzzy thresholds | 0.85 possible, 0.97 strong; common names produce reviewable false positives | Stricter thresholds miss transliterations, the worse failure in screening |
+| Authority | Suggestions and flags; the reviewer accepts codes and acknowledges flags | Auto-coding or blocking approval would make it clinical decision support, with the regulatory weight that carries |
+
+A missing data source is always reported (`errors`, `status: "unavailable"`, `mode:
+"offline"`), never shown as "no problems found".
+
 ## Idempotency
 
 Repeating `POST /sessions/{id}/export` in live mode creates a second Clio Contact and Matter,

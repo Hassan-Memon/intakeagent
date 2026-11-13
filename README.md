@@ -1,9 +1,10 @@
 # IntakeAgent
 
 **Voice-first AI intake for clinics and law firms.** Patients and clients talk; the agent
-listens, asks the follow-ups a good intake coordinator would, and produces clean FHIR R4
-records or a Clio-ready matter, with a human approving every record. PHI never leaves your
-own inference box.
+listens, asks the follow-ups a good intake coordinator would, checks what it heard against
+public reference data (RxNorm, ICD-10-CM, OFAC and UN sanctions lists), and produces clean
+FHIR R4 records or a Clio-ready matter, with a human approving every record. PHI never leaves
+your own inference box.
 
 [![CI](https://github.com/Hassan-Memon/intakeagent/actions/workflows/ci.yml/badge.svg)](https://github.com/Hassan-Memon/intakeagent/actions/workflows/ci.yml)
 ![License](https://img.shields.io/badge/license-Apache--2.0-blue)
@@ -12,7 +13,9 @@ own inference box.
 
 > **Live demo: [intakeagent.hassan-memon.workers.dev](https://intakeagent.hassan-memon.workers.dev).**
 > Choose a clinic or law-firm intake, play the sample patient or client (or type answers), then
-> review, approve and export a FHIR R4 bundle or Clio JSON. The backend is simulated in your
+> review the reference checks (the sample patient takes amoxicillin despite a penicillin allergy;
+> the sample client's employer resembles an entry on a fictional sanctions list), approve and
+> export a FHIR R4 bundle or Clio JSON. The backend is simulated in your
 > browser, the people are fictional, and nothing you type leaves the page.
 
 - **Talks, listens, follows up.** Browser microphone to WebSocket to Whisper; a LangGraph agent
@@ -21,6 +24,12 @@ own inference box.
   insurance) and `LegalIntake` (client, matter, opposing party, key dates, conflict-check names).
 - **Standards out, not PDFs.** FHIR R4 transaction Bundle (Patient, Encounter, Condition,
   AllergyIntolerance, MedicationStatement, Coverage) or Clio API v4 Contact + Matter.
+- **Checked before anyone approves.** A `verify` step codes medications to RxNorm and flags any
+  that conflict with a reported allergy by ingredient or drug class, suggests ICD-10-CM codes for
+  the complaint and conditions (U.S. National Library of Medicine APIs, free, with a bundled
+  offline snapshot), and screens every party in a legal intake against OFAC and UN sanctions
+  lists **locally**. Suggestions only: the reviewer accepts codes, and approving past a flag is
+  an audited acknowledgement. See [ADR-0007](docs/adr/ADR-0007-reference-data-verification.md).
 - **Human in the loop by construction.** The graph parks on a LangGraph `interrupt()` until a
   person edits and approves. There is no code path that exports without approval.
 - **Local-first PHI.** Default LLM is Ollama or an OpenInfer box tagged `private`. Any opt-in
@@ -42,9 +51,12 @@ flowchart LR
     subgraph Graph["LangGraph intake graph"]
       M[merge_transcript] --> E[extract] --> D[detect_missing]
       D -->|missing, not finished| Q[ask_next_question]
-      D -->|finished| H[await_approval\ninterrupt]
+      D -->|finished| V[verify\nreference checks]
+      V --> H[await_approval\ninterrupt]
       H --> X[export]
     end
+    V -. drug names,\ncomplaint keywords .-> NLM[(NLM RxNav, RxClass,\nClinical Tables\nor bundled snapshot)]
+    V -. matched locally .-> SL[(OFAC + UN\nsanctions lists)]
     E -. redact before\nnon-local LLM .-> LLM[(LLM\nOllama / OpenInfer / Groq)]
     Q -. protocol hint .-> RAG[(pgvector\nprotocol snippets)]
     REST[/REST: sessions, approve, export, records/]
@@ -77,9 +89,12 @@ sequenceDiagram
   end
   B->>A: {type: finish}
   A->>G: invoke(finished=true)
-  G-->>A: interrupt(record, missing)
+  G->>G: verify (RxNorm, ICD-10-CM / sanctions)
+  G-->>A: interrupt(record, missing, verification)
   A-->>B: awaiting_approval -> /review/{id}
-  B->>A: POST /sessions/{id}/approve {edited record}
+  B->>A: POST /sessions/{id}/verify {edited record} (re-run after edits)
+  A-->>B: flags, code suggestions, screening
+  B->>A: POST /sessions/{id}/approve {edited record + accepted codes, acknowledged_flags}
   A->>G: Command(resume={approved, record})
   G->>X: export (optional on approve)
   B->>A: POST /sessions/{id}/export?target=fhir|clio
@@ -108,7 +123,7 @@ scripted conversation so the flow is identical with or without a real microphone
 cd backend
 uv sync
 DEMO_MODE=1 uv run uvicorn intakeagent.main:app --reload --host 127.0.0.1 --port 8000
-uv run pytest            # 40 tests, fully offline
+uv run pytest            # 69 tests, fully offline
 
 # frontend (Node 22)
 cd frontend
@@ -128,6 +143,8 @@ npm run dev              # http://localhost:3000
 | LLM, cloud (redacted) | `LLM_PROVIDER=groq`, `ALLOW_CLOUD_LLM=1` | transcript is redacted first |
 | Push FHIR to HAPI sandbox | `FHIR_PUSH=1` | synthetic data only |
 | Clio live | `CLIO_CLIENT_ID`, `CLIO_CLIENT_SECRET`, then visit `/oauth/clio/authorize` | set the returned `CLIO_ACCESS_TOKEN` |
+| Clinical codes, live | `DEMO_MODE=0` (`TERMINOLOGY_PROVIDER=auto` or `nlm`) | NLM RxNav and Clinical Tables, no key; falls back to the bundled snapshot. Sends drug names and complaint keywords only; `offline` sends nothing |
+| Sanctions screening, real lists | `cd backend && uv run python -m intakeagent.verify.sanctions refresh --out data/sanctions.json` | OFAC SDN, OFAC Consolidated and UN lists (~21,000 entries), matched locally; `SANCTIONS_LIST_PATH` points at the file. Refresh on a schedule |
 
 ## Free deployment guide
 
@@ -158,7 +175,8 @@ The public demo is the frontend alone, built with `NEXT_PUBLIC_DEMO_MODE=1`. In 
 `lib/api.ts` and `lib/ws.ts` talk to an in-browser simulation of the backend (`frontend/lib/demo`)
 instead of FastAPI: a TypeScript port of the rule-based extractor fills fields with evidence
 spans, the question picker asks for missing required fields in the same order and words as the
-backend, and approve and export build a real-shaped FHIR R4 transaction Bundle or Clio Contact +
+backend, the reference checks run on the same NLM snapshot and a fictional sanctions list
+(`lib/demo/verify.ts`), and approve and export build a real-shaped FHIR R4 transaction Bundle or Clio Contact +
 Matter JSON that you can download. State lives in `sessionStorage`, nothing is sent anywhere, and
 every page shows a banner saying so. Speech-to-text needs the real backend, so the demo offers a
 fictional sample patient or client to play instead. For the full stack, use `docker compose up`.
@@ -189,6 +207,7 @@ backend/                 FastAPI + LangGraph service (uv, pytest, ruff)
   intakeagent/redaction  regex PHI redaction and re-hydration
   intakeagent/stt        stub, Groq Whisper, faster-whisper
   intakeagent/llm        provider abstraction (OpenInfer, Ollama, Groq, Gemini, OpenRouter)
+  intakeagent/verify     RxNorm/ICD-10-CM checks (NLM + snapshot), allergy flags, sanctions screening
   intakeagent/exporters  FHIR R4 Bundle, Clio Contact + Matter + OAuth2
   intakeagent/db         SQLModel tables, pgvector RAG, seed protocols
   intakeagent/api        REST, WebSocket, IntakeService
@@ -215,7 +234,9 @@ docs/
 
 ## Status
 
-MVP, version 0.1.0. See [CHANGELOG.md](CHANGELOG.md) for the full history. Working: full demo flow, 40 offline tests, FHIR Bundle validated with `fhir.resources`,
+MVP, version 0.1.0. See [CHANGELOG.md](CHANGELOG.md) for the full history. Working: full demo flow, 69 offline tests, FHIR Bundle validated with `fhir.resources` and
+carrying reviewer-accepted RxNorm and ICD-10-CM codes, allergy cross-checks, local sanctions
+screening,
 Clio payloads in v4 shape with a mocked live path, HITL interrupt and resume, PHI redaction,
 pgvector RAG with SQLite fallback. Not yet: authentication, encryption at rest beyond the
 database provider, WebRTC transport, Presidio integration, production hardening. See

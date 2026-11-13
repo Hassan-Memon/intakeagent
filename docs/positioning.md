@@ -43,19 +43,29 @@ conflict check.
    is a configuration change here.
 4. **Standards out.** FHIR R4 and Clio v4 mean integration is "point it at your server", not a
    custom connector per customer.
-5. **Runs free, scales honestly.** Vercel, Render, Neon and Groq free tiers host a working
+5. **Checked against public reference data before anyone approves.** Medications are coded
+   to RxNorm and cross-checked against reported allergies by ingredient and drug class (a
+   penicillin allergy plus amoxicillin is flagged), and the complaint gets ICD-10-CM
+   suggestions. On the legal side every party is screened against OFAC and UN sanctions lists
+   on your own server. Clipboards, chatbots and web-form intake do none of this.
+6. **Runs free, scales honestly.** Vercel, Render, Neon and Groq free tiers host a working
    pilot. The system design doc says what breaks first at 10x and how to fix it.
 
 ## What it is not
 
 - Not a medical device and not clinical decision support. It records what the patient said.
+  The allergy cross-check is a reference lookup shown to a person, who confirms it; it never
+  blocks, changes or recommends treatment.
 - Not legal advice. It records what the client said and prepares a matter for a lawyer.
+  Sanctions screening flags similar names for a person to check; it is not a full AML or KYC
+  programme.
 - Not a replacement for an EHR or practice management system. It feeds them.
 
 ## One-line pitch by audience
 
-- **Clinic manager:** "Your patients talk; your EHR gets a clean FHIR record your staff approved."
-- **Managing partner:** "First call to conflict-checked Clio matter, with the client's own words
-  attached to every field."
+- **Clinic manager:** "Your patients talk; your EHR gets a clean, RxNorm and ICD-10 coded FHIR
+  record your staff approved, with allergy conflicts flagged first."
+- **Managing partner:** "First call to a conflict-checked, sanctions-screened Clio matter, with
+  the client's own words attached to every field."
 - **CTO:** "LangGraph, FastAPI, Next.js, pgvector, FHIR, OAuth2, HITL interrupts, zero-key demo,
   all Apache-2.0."

@@ -27,6 +27,11 @@ checkpointer keyed by session id gives us that for free.
 Protocol snippets for grounding questions are vectors. Postgres with pgvector covers both;
 SQLite covers tests.
 
+**Verification (`verify/`).** Before a person approves, the record is checked against public
+reference data: RxNorm and ICD-10-CM from the U.S. National Library of Medicine for
+healthcare, OFAC and UN sanctions lists for legal. It produces suggestions and flags, never
+edits.
+
 **Exporters (`exporters/`).** FHIR and Clio are the systems the clinic and firm already own.
 Producing their native formats is the difference between a demo and a tool.
 
@@ -63,19 +68,37 @@ Producing their native formats is the difference between a demo and a tool.
 
 7. **Finish.** The user clicks "Finish and review"; the client sends `{"type": "finish"}`.
    `IntakeService.finish` invokes the graph with `finished=True`. Routing now goes to
-   `await_approval`, which calls `interrupt()`; the graph stops. Status becomes
+   `verify`, which calls the `Verifier` (`verify/__init__.py`): medications coded to RxNorm,
+   allergies cross-checked by ingredient and drug class, ICD-10-CM suggestions for the
+   complaint (or, for legal, every party screened against sanctions lists). The result rides
+   in the interrupt payload. Then `await_approval` calls `interrupt()`; the graph stops. Status becomes
    `awaiting_approval` and the client navigates to `/review/{id}`.
 
 8. **Review.** `components/ReviewClient.tsx` renders `RecordForm` from the field specs.
    Hovering the "i" shows the evidence quote and highlights the span in the transcript.
-   The reviewer edits and clicks Approve: `POST /sessions/{id}/approve` with the edited record.
+   Above the form, `components/VerificationPanel.tsx` shows the reference checks from
+   `POST /sessions/{id}/verify`: flags, RxNorm matches with tick boxes, ICD-10-CM choices or
+   the sanctions table. "Re-run checks" sends the edited record to the same endpoint, which is
+   read-only and writes a `record.verified` audit event. Accepted codes go into
+   `record.codes`. If there are flags, Approve stays disabled until the reviewer ticks "I have
+   reviewed the flags". The reviewer edits and clicks Approve: `POST /sessions/{id}/approve`
+   with the edited record and `acknowledged_flags`, which land in the `record.approved` audit
+   event.
    `IntakeService.approve` resumes the graph with `Command(resume=...)`, the `await_approval`
    node validates the edits, `export` runs if a target was requested, and an `IntakeRecord`
    row is written.
 
 9. **Export.** `POST /sessions/{id}/export?target=fhir` calls `exporters/fhir.py`, which builds
-   a transaction Bundle with `fhir.resources`, pushes it only if `FHIR_PUSH=1`, and stores the
-   result on the record. `/records` lists everything approved.
+   a transaction Bundle with `fhir.resources` (adding the RxNorm and ICD-10-CM codings the
+   reviewer accepted next to the patient's words), pushes it only if `FHIR_PUSH=1`, and stores
+   the result on the record. A Clio export re-screens the parties and writes the result into
+   the matter description and `sanctions_screening`. `/records` lists everything approved.
+
+## The browser demo
+
+The public demo has no backend. `lib/demo/backend.ts` simulates `IntakeService`, and
+`lib/demo/verify.ts` is a TypeScript port of the verifier that reads the same bundled NLM
+snapshot and fictional sanctions list as the backend's DEMO_MODE. Nothing is fetched.
 
 ## What to notice
 
