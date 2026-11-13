@@ -16,6 +16,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 LLMProvider = Literal["auto", "openinfer", "ollama", "groq", "gemini", "openrouter", "stub"]
 STTProvider = Literal["auto", "stub", "groq", "faster_whisper"]
+TerminologyProvider = Literal["auto", "nlm", "offline"]
 
 
 class Settings(BaseSettings):
@@ -50,6 +51,12 @@ class Settings(BaseSettings):
     )
     clio_access_token: str = Field(default="", alias="CLIO_ACCESS_TOKEN")
     clio_refresh_token: str = Field(default="", alias="CLIO_REFRESH_TOKEN")
+
+    # Verification (reference-data checks before review)
+    terminology_provider: TerminologyProvider = Field(
+        default="auto", alias="TERMINOLOGY_PROVIDER"
+    )  # auto: bundled snapshot in DEMO_MODE, NLM (with snapshot fallback) otherwise
+    sanctions_list_path: str = Field(default="data/sanctions.json", alias="SANCTIONS_LIST_PATH")
 
     # Web
     cors_origins: str = Field(

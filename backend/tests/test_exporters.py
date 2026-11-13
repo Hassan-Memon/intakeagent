@@ -23,7 +23,7 @@ def test_fhir_bundle_is_a_valid_transaction_with_expected_resources(healthcare_t
     assert types.count("Encounter") == 1
     assert types.count("Condition") == 2  # chief complaint + type 2 diabetes
     assert types.count("AllergyIntolerance") == 1
-    assert types.count("MedicationStatement") == 2
+    assert types.count("MedicationStatement") == 3  # metformin, lisinopril, amoxicillin
     assert types.count("Coverage") == 1
     assert all(e["request"]["method"] == "POST" for e in bundle["entry"])
     patient = next(
@@ -144,3 +144,59 @@ def test_clio_oauth_flow():
     token = client.exchange_code("code123")
     assert token.access_token == "a1" and token.refresh_token == "r1"
     assert client.refresh("r1").access_token == "a2"
+
+
+def test_fhir_bundle_carries_reviewer_accepted_codes(healthcare_transcript):
+    record = _patient(healthcare_transcript)
+    rx = {"system": "http://www.nlm.nih.gov/research/umls/rxnorm", "code": "6809",
+          "display": "metformin"}  # fmt: skip
+    icd = {"system": "http://hl7.org/fhir/sid/icd-10-cm", "code": "R10.31",
+           "display": "Right lower quadrant pain"}  # fmt: skip
+    data = record.model_dump()
+    data["codes"]["medications"] = {"metformin": rx, "a name that was edited away": rx}
+    data["codes"]["chief_complaint"] = {record.chief_complaint.value: icd}
+    record = type(record).model_validate(data)
+
+    bundle = build_bundle(record, "sess-codes")
+    Bundle.model_validate(bundle)
+    meds = [
+        e["resource"]["medicationCodeableConcept"]
+        for e in bundle["entry"]
+        if e["resource"]["resourceType"] == "MedicationStatement"
+    ]
+    by_text = {m["text"]: m for m in meds}
+    assert by_text["metformin"]["coding"] == [rx]
+    assert "coding" not in by_text["lisinopril"]  # not accepted, stays text-only
+    complaint = next(
+        e["resource"]["code"]
+        for e in bundle["entry"]
+        if e["resource"]["resourceType"] == "Condition"
+        and e["resource"]["category"][0]["coding"][0]["code"] == "encounter-diagnosis"
+    )
+    assert complaint["coding"] == [icd]
+
+
+def test_clio_matter_records_sanctions_screening(legal_transcript):
+    screening = {
+        "status": "ok",
+        "list": {"name": "Demo list", "generated_at": "2026-11-13"},
+        "results": [
+            {"name": "Daniel Okafor", "role": "client", "status": "clear", "matches": []},
+            {
+                "name": "Northwind Logistics",
+                "role": "opposing party",
+                "status": "possible_match",
+                "matches": [
+                    {"matched_name": "NORTHWIND LOGISTIX", "list": "Demo list", "score": 0.912}
+                ],
+            },
+        ],
+    }
+    out = ClioExporter("https://app.clio.com").export(
+        _client(legal_transcript), "sess-s", screening=screening
+    )
+    assert out["sanctions_screening"] == screening
+    desc = out["matter"]["description"]
+    assert "Sanctions screening against Demo list (as of 2026-11-13):" in desc
+    assert "Daniel Okafor (client): no match" in desc
+    assert "possible match to NORTHWIND LOGISTIX [Demo list], score 0.91" in desc

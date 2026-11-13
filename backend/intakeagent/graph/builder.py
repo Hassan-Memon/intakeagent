@@ -6,6 +6,8 @@
                            |
                           yes
                            v
+                        verify      (reference data: RxNorm, ICD-10-CM, sanctions lists)
+                           v
                      await_approval  (interrupt: human edits + approves)
                            v
                          export -> END
@@ -15,8 +17,10 @@ keeps the thread's state between invocations. When the user presses "finish" the
 invokes with ``finished=True`` and the graph parks at ``await_approval`` via ``interrupt()``.
 ``POST /sessions/{id}/approve`` resumes it with ``Command(resume=...)``.
 
-Dependencies (extractor, exporters, protocol store) are injected so tests can run the graph
-fully offline.
+``verify`` attaches suggestions and flags for the reviewer; it never edits the record.
+
+Dependencies (extractor, exporters, protocol store, verifier) are injected so tests can run
+the graph fully offline.
 """
 
 from __future__ import annotations
@@ -37,6 +41,7 @@ from intakeagent.schemas.base import field_specs
 
 Exporter = Callable[[str, dict[str, Any], str], dict[str, Any]]  # (vertical, record, sid)
 HintLookup = Callable[[str, str], str | None]  # (vertical, field_name) -> hint
+VerifyFn = Callable[[str, dict[str, Any]], dict[str, Any]]  # (vertical, record) -> checks
 
 
 def merge_transcript(state: IntakeState) -> dict[str, Any]:
@@ -56,6 +61,7 @@ def build_intake_graph(
     extractor: Extractor,
     exporters: dict[str, Exporter] | None = None,
     hint_lookup: HintLookup | None = None,
+    verifier: VerifyFn | None = None,
     checkpointer: BaseCheckpointSaver | None = None,
 ):
     exporters = exporters or {}
@@ -73,7 +79,7 @@ def build_intake_graph(
         return {"missing_fields": missing_required(record)}
 
     def route_after_missing(state: IntakeState) -> str:
-        return "await_approval" if state.get("finished") else "ask_next_question"
+        return "verify" if state.get("finished") else "ask_next_question"
 
     def ask_next_question(state: IntakeState) -> dict[str, Any]:
         vertical = state["vertical"]
@@ -92,6 +98,21 @@ def build_intake_graph(
             "questions_asked": [question],
         }
 
+    def verify(state: IntakeState) -> dict[str, Any]:
+        if verifier is None:
+            return {"verification": None}
+        try:
+            return {"verification": verifier(state["vertical"], state["record"])}
+        except Exception as exc:  # reference data is advisory; never block review on it
+            return {
+                "verification": {
+                    "vertical": state["vertical"],
+                    "flags": [],
+                    "sources": [],
+                    "errors": [f"verification failed: {exc}"],
+                }
+            }
+
     def await_approval(state: IntakeState) -> dict[str, Any]:
         # interrupt() pauses the graph and surfaces this payload to the caller. When resumed,
         # the node re-runs from the top and interrupt() returns the resume value instead.
@@ -100,6 +121,7 @@ def build_intake_graph(
                 "session_id": state["session_id"],
                 "record": state["record"],
                 "missing_fields": state.get("missing_fields", []),
+                "verification": state.get("verification"),
                 "message": "Review the record, edit if needed, then approve.",
             }
         )
@@ -131,6 +153,7 @@ def build_intake_graph(
     g.add_node("extract", extract)
     g.add_node("detect_missing", detect_missing)
     g.add_node("ask_next_question", ask_next_question)
+    g.add_node("verify", verify)
     g.add_node("await_approval", await_approval)
     g.add_node("export", export)
 
@@ -140,9 +163,10 @@ def build_intake_graph(
     g.add_conditional_edges(
         "detect_missing",
         route_after_missing,
-        {"ask_next_question": "ask_next_question", "await_approval": "await_approval"},
+        {"ask_next_question": "ask_next_question", "verify": "verify"},
     )
     g.add_edge("ask_next_question", END)
+    g.add_edge("verify", "await_approval")
     g.add_edge("await_approval", "export")
     g.add_edge("export", END)
 

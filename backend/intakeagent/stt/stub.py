@@ -18,7 +18,8 @@ SCRIPTS: dict[str, list[str]] = {
         "Hi, my name is Sarah Mitchell and I was born on March 4th, 1986.",
         "I've had a sharp pain in my lower right side since Tuesday evening, "
         "it's about a six out of ten.",
-        "I take metformin 500 milligrams twice a day and lisinopril 10 milligrams every morning.",
+        "I take metformin 500 milligrams twice a day, lisinopril 10 milligrams every morning "
+        "and amoxicillin 500 milligrams three times a day.",
         "I'm allergic to penicillin, it gives me hives.",
         "My phone number is 415-555-0134 and my insurance is Blue Shield, member ID BS88213.",
         "I live at 220 Maple Street, Oakland. I was diagnosed with type 2 diabetes in 2019.",

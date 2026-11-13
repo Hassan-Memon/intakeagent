@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from intakeagent.schemas.base import Extracted, intake_field
+from intakeagent.schemas.base import Coding, Extracted, intake_field
 
 
 class Medication(BaseModel):
@@ -16,6 +16,21 @@ class Medication(BaseModel):
 class Allergy(BaseModel):
     substance: str
     reaction: str | None = None
+
+
+class ReviewerCodes(BaseModel):
+    """Standard codes a reviewer accepted on the review screen.
+
+    Each map is keyed by the exact text it codes (a medication name, an allergy substance, the
+    chief complaint, a condition). If the reviewer later edits that text, the key no longer
+    matches and the stale code is simply not exported, rather than exported against the wrong
+    words. Only a person sets these; extractors never do.
+    """
+
+    medications: dict[str, Coding] = Field(default_factory=dict)
+    allergies: dict[str, Coding] = Field(default_factory=dict)
+    chief_complaint: dict[str, Coding] = Field(default_factory=dict)
+    conditions: dict[str, Coding] = Field(default_factory=dict)
 
 
 class PatientIntake(BaseModel):
@@ -93,4 +108,8 @@ class PatientIntake(BaseModel):
         required=False,
         question="What is the member ID on your insurance card?",
         group="insurance",
+    )
+    codes: ReviewerCodes = Field(
+        default_factory=ReviewerCodes,
+        description="RxNorm and ICD-10-CM codes accepted by the reviewer. Not extracted.",
     )

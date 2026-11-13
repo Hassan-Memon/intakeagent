@@ -7,6 +7,7 @@ compute missing fields and phrase the next question without a second source of t
 """
 
 from intakeagent.schemas.base import (
+    Coding,
     Evidence,
     Extracted,
     FieldSpec,
@@ -16,7 +17,7 @@ from intakeagent.schemas.base import (
     missing_required,
 )
 from intakeagent.schemas.legal import KeyDate, LegalIntake
-from intakeagent.schemas.patient import Allergy, Medication, PatientIntake
+from intakeagent.schemas.patient import Allergy, Medication, PatientIntake, ReviewerCodes
 
 SCHEMAS = {"healthcare": PatientIntake, "legal": LegalIntake}
 
@@ -27,6 +28,7 @@ def schema_for(vertical: Vertical) -> type[PatientIntake] | type[LegalIntake]:
 
 __all__ = [
     "Allergy",
+    "Coding",
     "Evidence",
     "Extracted",
     "FieldSpec",
@@ -34,6 +36,7 @@ __all__ = [
     "LegalIntake",
     "Medication",
     "PatientIntake",
+    "ReviewerCodes",
     "SCHEMAS",
     "Vertical",
     "field_specs",

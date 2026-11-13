@@ -57,9 +57,29 @@ def _valid_date(value: str | None) -> str | None:
         return None
 
 
+def _concept(text: str, codes: dict[str, Any]) -> dict[str, Any]:
+    """CodeableConcept with the patient's words as ``text`` plus any reviewer-accepted coding.
+
+    ``codes`` is keyed by the exact text that was coded; if the text was edited after the code
+    was accepted there is no key match and only ``text`` is exported.
+    """
+    concept: dict[str, Any] = {"text": text}
+    coding = codes.get(text)
+    if coding is not None:
+        c = coding.model_dump() if hasattr(coding, "model_dump") else dict(coding)
+        concept["coding"] = [c]
+    return concept
+
+
 def build_bundle(record: PatientIntake, session_id: str) -> dict[str, Any]:
-    """Build and validate a transaction Bundle from a PatientIntake."""
+    """Build and validate a transaction Bundle from a PatientIntake.
+
+    Medications and allergies carry RxNorm codings, and the chief complaint and conditions
+    carry ICD-10-CM codings, when a reviewer accepted them (``record.codes``). The patient's own
+    words always stay in ``text``.
+    """
     now = datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+    codes = record.codes
     patient_url = _urn()
     encounter_url = _urn()
     entries: list[dict[str, Any]] = []
@@ -95,7 +115,9 @@ def build_bundle(record: PatientIntake, session_id: str) -> dict[str, Any]:
         subject={"reference": patient_url},
         period={"start": now},
         reasonCode=(
-            [{"text": record.chief_complaint.value}] if record.chief_complaint.value else None
+            [_concept(record.chief_complaint.value, codes.chief_complaint)]
+            if record.chief_complaint.value
+            else None
         ),
     )
     entries.append(_entry(encounter, encounter_url))
@@ -120,7 +142,7 @@ def build_bundle(record: PatientIntake, session_id: str) -> dict[str, Any]:
                     ]
                 }
             ],
-            code={"text": record.chief_complaint.value},
+            code=_concept(record.chief_complaint.value, codes.chief_complaint),
             subject={"reference": patient_url},
             encounter={"reference": encounter_url},
             onsetString=record.symptom_onset.value or None,
@@ -154,7 +176,7 @@ def build_bundle(record: PatientIntake, session_id: str) -> dict[str, Any]:
                             ]
                         }
                     ],
-                    code={"text": name},
+                    code=_concept(name, codes.conditions),
                     subject={"reference": patient_url},
                 ),
                 _urn(),
@@ -177,7 +199,7 @@ def build_bundle(record: PatientIntake, session_id: str) -> dict[str, Any]:
                             }
                         ]
                     },
-                    code={"text": substance},
+                    code=_concept(substance, codes.allergies),
                     patient={"reference": patient_url},
                     reaction=([{"manifestation": [{"text": reaction}]}] if reaction else None),
                 ),
@@ -196,7 +218,7 @@ def build_bundle(record: PatientIntake, session_id: str) -> dict[str, Any]:
             _entry(
                 MedicationStatement(
                     status="active",
-                    medicationCodeableConcept={"text": name},
+                    medicationCodeableConcept=_concept(name, codes.medications),
                     subject={"reference": patient_url},
                     context={"reference": encounter_url},
                     dosage=[{"text": dosage_text}] if dosage_text else None,

@@ -534,6 +534,8 @@ class LLMExtractor:
         data = result.model_dump() if isinstance(result, BaseModel) else dict(result)
         if mapping:
             data = rehydrate_record(data, mapping)
+        # Codes are accepted by a reviewer against reference data, never invented by a model.
+        data.pop("codes", None)
         record = schema(**data)
         record = merge_records(previous, record)
         return attach_evidence(record, transcript)

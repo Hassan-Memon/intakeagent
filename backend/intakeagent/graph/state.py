@@ -27,6 +27,7 @@ class IntakeState(TypedDict, total=False):
     next_question: str | None
     next_field: str | None
     redaction_count: int
+    verification: dict[str, Any] | None  # reference-data suggestions and flags for review
 
     # Control flow.
     finished: bool  # user pressed "finish": go to approval instead of asking again

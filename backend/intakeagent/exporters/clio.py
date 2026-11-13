@@ -123,7 +123,29 @@ def build_contact_payload(record: LegalIntake) -> dict[str, Any]:
     return {"data": data}
 
 
-def build_matter_payload(record: LegalIntake, client_id: int | str) -> dict[str, Any]:
+def screening_summary(screening: dict[str, Any] | None) -> list[str]:
+    """One-line-per-party sanctions screening note for the matter description."""
+    if not screening:
+        return []
+    if screening.get("status") != "ok":
+        return ["Sanctions screening: not run (no list loaded)."]
+    lst = screening.get("list") or {}
+    lines = [f"Sanctions screening against {lst.get('name')} (as of {lst.get('generated_at')}):"]
+    for r in screening.get("results", []):
+        if r["status"] == "clear":
+            lines.append(f"  {r['name']} ({r['role']}): no match")
+        else:
+            top = r["matches"][0]
+            lines.append(
+                f"  {r['name']} ({r['role']}): {r['status'].replace('_', ' ')} "
+                f"to {top['matched_name']} [{top['list']}], score {top['score']:.2f}"
+            )
+    return lines
+
+
+def build_matter_payload(
+    record: LegalIntake, client_id: int | str, screening: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Clio v4 Matter payload. Opposing party and dates go into description and custom notes."""
     key_dates = record.key_dates.value or []
     lines = [record.matter_description.value or "Intake via IntakeAgent."]
@@ -137,6 +159,7 @@ def build_matter_payload(record: LegalIntake, client_id: int | str) -> dict[str,
         lines.append(f"Key date: {label}: {date}")
     if record.urgency.value:
         lines.append(f"Urgency: {record.urgency.value}")
+    lines.extend(screening_summary(screening))
     data: dict[str, Any] = {
         "client": {"id": client_id},
         "description": "\n".join(lines),
@@ -192,12 +215,17 @@ class ClioExporter:
             results.append({"name": name, "hits": resp.json().get("data", []), "mode": "live"})
         return results
 
-    def export(self, record: LegalIntake, session_id: str) -> dict[str, Any]:
+    def export(
+        self,
+        record: LegalIntake,
+        session_id: str,
+        screening: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
         contact_payload = build_contact_payload(record)
         conflicts = self.conflict_check(record.conflict_check_names.value or [])
         if not self.live:
             contact_id = 100000 + (abs(hash(session_id)) % 899999)
-            matter_payload = build_matter_payload(record, contact_id)
+            matter_payload = build_matter_payload(record, contact_id, screening)
             return {
                 "target": "clio",
                 "mode": "mock",
@@ -209,6 +237,7 @@ class ClioExporter:
                     **matter_payload["data"],
                 },
                 "conflict_check": conflicts,
+                "sanctions_screening": screening,
                 "payloads": {"contact": contact_payload, "matter": matter_payload},
             }
 
@@ -219,7 +248,7 @@ class ClioExporter:
         )
         c.raise_for_status()
         contact = c.json()["data"]
-        matter_payload = build_matter_payload(record, contact["id"])
+        matter_payload = build_matter_payload(record, contact["id"], screening)
         m = self._http.post(
             f"{self._base_url}/api/v4/matters.json",
             json=matter_payload,
@@ -233,5 +262,6 @@ class ClioExporter:
             "contact": contact,
             "matter": m.json()["data"],
             "conflict_check": conflicts,
+            "sanctions_screening": screening,
             "payloads": {"contact": contact_payload, "matter": matter_payload},
         }

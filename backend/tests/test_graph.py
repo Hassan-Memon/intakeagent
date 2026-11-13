@@ -112,3 +112,41 @@ def test_hint_lookup_is_appended_to_question():
         {"configurable": {"thread_id": "t5"}},
     )
     assert "hint for full_name" in out["next_question"]
+
+
+def test_verify_runs_before_approval_and_failures_do_not_block():
+    seen = {}
+
+    def verifier(vertical, record):
+        seen["vertical"] = vertical
+        return {"vertical": vertical, "flags": [{"id": "x"}], "sources": []}
+
+    graph = build_intake_graph(RuleBasedExtractor(), verifier=verifier)
+    cfg = {"configurable": {"thread_id": "t6"}}
+    out = graph.invoke(
+        {
+            "session_id": "t6",
+            "vertical": "legal",
+            "transcript_segments": [_seg(0, SCRIPTS["legal"][0])],
+            "finished": True,
+        },
+        cfg,
+    )
+    assert seen["vertical"] == "legal"
+    assert out["__interrupt__"][0].value["verification"]["flags"] == [{"id": "x"}]
+
+    def broken(vertical, record):
+        raise RuntimeError("list file corrupt")
+
+    graph = build_intake_graph(RuleBasedExtractor(), verifier=broken)
+    out = graph.invoke(
+        {
+            "session_id": "t7",
+            "vertical": "legal",
+            "transcript_segments": [_seg(0, SCRIPTS["legal"][0])],
+            "finished": True,
+        },
+        {"configurable": {"thread_id": "t7"}},
+    )
+    payload = out["__interrupt__"][0].value
+    assert "list file corrupt" in payload["verification"]["errors"][0]

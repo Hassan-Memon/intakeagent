@@ -28,6 +28,16 @@ class ApproveBody(BaseModel):
     )
     export_target: Literal["fhir", "clio"] | None = None
     approved_by: str = "front-desk"
+    acknowledged_flags: list[str] = Field(
+        default_factory=list,
+        description="Ids of verification flags the reviewer saw before approving (audited).",
+    )
+
+
+class VerifyBody(BaseModel):
+    record: dict[str, Any] | None = Field(
+        default=None, description="Edited record to check; omit to check the stored record."
+    )
 
 
 class TextBody(BaseModel):
@@ -124,6 +134,7 @@ def approve(session_id: str, body: ApproveBody, request: Request) -> dict[str, A
             record=body.record,
             export_target=body.export_target,
             approved_by=body.approved_by,
+            acknowledged_flags=body.acknowledged_flags,
         )
     except SessionNotFound as exc:
         raise HTTPException(404, "session not found") from exc
@@ -132,6 +143,19 @@ def approve(session_id: str, body: ApproveBody, request: Request) -> dict[str, A
     except (ValueError, TypeError) as exc:
         raise HTTPException(422, f"invalid record: {exc}") from exc
     return {"status": result.status, "record": record_out(approved)}
+
+
+@router.post("/sessions/{session_id}/verify")
+def verify(session_id: str, request: Request, body: VerifyBody | None = None) -> dict[str, Any]:
+    """Reference-data checks: RxNorm, ICD-10-CM and allergy flags, or sanctions screening."""
+    try:
+        return _service(request).verify(session_id, body.record if body else None)
+    except SessionNotFound as exc:
+        raise HTTPException(404, "session not found") from exc
+    except InvalidTransition as exc:
+        raise HTTPException(409, str(exc)) from exc
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(422, f"invalid record: {exc}") from exc
 
 
 @router.post("/sessions/{session_id}/export")

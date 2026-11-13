@@ -17,6 +17,8 @@ build/
 *.sqlite3
 backend/.coverage
 backend/htmlcov/
+# Downloaded sanctions lists (refresh with python -m intakeagent.verify.sanctions refresh)
+backend/data/
 
 # Node / Next.js
 node_modules/

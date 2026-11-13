@@ -27,11 +27,12 @@ from intakeagent.graph.extractors import build_extractor
 from intakeagent.llm import resolve_provider
 from intakeagent.schemas import LegalIntake, PatientIntake
 from intakeagent.stt import get_stt_provider
+from intakeagent.verify import Verifier, build_verifier
 
 log = logging.getLogger("intakeagent")
 
 
-def build_exporters(settings: Settings) -> dict[str, Any]:
+def build_exporters(settings: Settings, verifier: Verifier | None = None) -> dict[str, Any]:
     fhir = FhirExporter(settings.fhir_base_url, push=settings.fhir_push and not settings.demo_mode)
     clio = ClioExporter(
         settings.clio_base_url,
@@ -46,7 +47,11 @@ def build_exporters(settings: Settings) -> dict[str, Any]:
     def export_clio(vertical: str, record: dict[str, Any], session_id: str) -> dict[str, Any]:
         if vertical != "legal":
             return {"target": "clio", "error": "Clio export is only available for legal"}
-        return clio.export(LegalIntake(**record), session_id)
+        intake = LegalIntake(**record)
+        # Screen again at export so the matter records the list it was actually checked
+        # against, even if the list was refreshed between review and export.
+        screening = verifier.screen(intake) if verifier else None
+        return clio.export(intake, session_id, screening=screening)
 
     return {"fhir": export_fhir, "clio": export_clio}
 
@@ -75,7 +80,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             log.exception("Protocol seeding failed; continuing without hints")
 
         extractor = build_extractor(llm, allow_cloud=settings.allow_cloud_llm)
-        exporters = build_exporters(settings)
+        verifier = build_verifier(
+            demo_mode=settings.demo_mode,
+            terminology_provider=settings.terminology_provider,
+            sanctions_list_path=settings.sanctions_list_path,
+        )
+        exporters = build_exporters(settings, verifier)
 
         def hints(vertical: str, field_name: str) -> str | None:
             try:
@@ -83,13 +93,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             except Exception:
                 return None
 
-        graph = build_intake_graph(extractor, exporters, hint_lookup=hints)
+        graph = build_intake_graph(extractor, exporters, hint_lookup=hints, verifier=verifier)
 
         app.state.settings = settings
         app.state.engine = engine
         app.state.llm = llm
         app.state.stt = get_stt_provider(settings)
-        app.state.service = IntakeService(engine, graph, exporters)
+        app.state.verifier = verifier
+        app.state.service = IntakeService(engine, graph, exporters, verifier)
         log.info(
             "IntakeAgent ready: demo=%s llm=%s stt=%s db=%s",
             settings.demo_mode,
@@ -131,6 +142,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "llm_local": st.llm.is_local,
             "stt": st.stt.name,
             "fhir_push": st.settings.fhir_push,
+            "terminology": st.verifier.terminology.mode,
+            "sanctions_list": st.verifier.sanctions.describe() if st.verifier.sanctions else None,
             "clio_mode": "live"
             if st.settings.clio_configured and not st.settings.demo_mode
             else "mock",

@@ -1,0 +1,16 @@
+{
+ "name": "Demo list (fictional entries, not a real sanctions list)",
+ "generated_at": "2026-11-13T00:00:00+00:00",
+ "demo": true,
+ "sources": [{"name": "IntakeAgent demo fixtures", "url": "", "count": 8}],
+ "entries": [
+  {"id": "DEMO:1", "list": "Demo list", "name": "NORTHWIND LOGISTIX TRADING FZE", "type": "entity", "program": "DEMO", "aliases": ["NORTHWIND LOGISTIX"]},
+  {"id": "DEMO:2", "list": "Demo list", "name": "CONTOSO MARITIME HOLDINGS LTD", "type": "entity", "program": "DEMO", "aliases": ["CONTOSO SHIPPING"]},
+  {"id": "DEMO:3", "list": "Demo list", "name": "FABRIKAM ARMS SUPPLY", "type": "entity", "program": "DEMO", "aliases": []},
+  {"id": "DEMO:4", "list": "Demo list", "name": "TAILSPIN FREIGHT LLC", "type": "entity", "program": "DEMO", "aliases": []},
+  {"id": "DEMO:5", "list": "Demo list", "name": "WOODGROVE EXCHANGE HOUSE", "type": "entity", "program": "DEMO", "aliases": ["WOODGROVE FX"]},
+  {"id": "DEMO:6", "list": "Demo list", "name": "SAMPLE, Jordan Quinn", "type": "individual", "program": "DEMO", "aliases": ["SAMPLE, J. Q."]},
+  {"id": "DEMO:7", "list": "Demo list", "name": "PLACEHOLDER, Alex", "type": "individual", "program": "DEMO", "aliases": []},
+  {"id": "DEMO:8", "list": "Demo list", "name": "FICTITIOUS, Morgan Lee", "type": "individual", "program": "DEMO", "aliases": []}
+ ]
+}

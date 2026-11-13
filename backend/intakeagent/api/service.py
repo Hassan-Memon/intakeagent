@@ -24,6 +24,7 @@ from intakeagent.stt.base import TranscriptSegment
 log = logging.getLogger(__name__)
 
 ExporterFn = Callable[[str, dict[str, Any], str], dict[str, Any]]
+VerifyFn = Callable[[str, dict[str, Any]], dict[str, Any]]
 
 
 class SessionNotFound(LookupError):
@@ -49,10 +50,17 @@ class TurnResult:
 
 
 class IntakeService:
-    def __init__(self, engine: Engine, graph: Any, exporters: dict[str, ExporterFn]) -> None:
+    def __init__(
+        self,
+        engine: Engine,
+        graph: Any,
+        exporters: dict[str, ExporterFn],
+        verifier: VerifyFn | None = None,
+    ) -> None:
         self._engine = engine
         self._graph = graph
         self._exporters = exporters
+        self._verifier = verifier
 
     # -- helpers ----------------------------------------------------------------
 
@@ -193,6 +201,7 @@ class IntakeService:
         record: dict[str, Any] | None = None,
         export_target: str | None = None,
         approved_by: str = "front-desk",
+        acknowledged_flags: list[str] | None = None,
     ) -> tuple[IntakeRecord, TurnResult]:
         """Resume the graph past the HITL interrupt with the reviewer's (edited) record."""
         with Session(self._engine) as s:
@@ -227,7 +236,14 @@ class IntakeService:
                 exported_at=datetime.now(UTC) if state.get("export_result") else None,
             )
             s.add(approved)
-            self._audit(s, row.id, "record.approved", by=approved_by, edited=bool(record))
+            self._audit(
+                s,
+                row.id,
+                "record.approved",
+                by=approved_by,
+                edited=bool(record),
+                acknowledged_flags=acknowledged_flags or [],
+            )
             if state.get("export_result"):
                 self._audit(s, row.id, "record.exported", target=export_target)
             s.add(row)
@@ -235,6 +251,38 @@ class IntakeService:
             s.refresh(row)
             s.refresh(approved)
             return approved, self._result(row, state)
+
+    def verify(self, session_id: str, record: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Run reference-data checks on the stored record, or on the reviewer's edited copy.
+
+        Read-only: the result goes back to the review screen and into the audit trail; the
+        record itself is untouched.
+        """
+        with Session(self._engine) as s:
+            row = self._load(s, session_id)
+            data = record if record is not None else row.record
+            if not data:
+                raise InvalidTransition("nothing to verify yet")
+            data = schema_for(row.vertical)(**data).model_dump()  # validates edits
+            if self._verifier is None:
+                result: dict[str, Any] = {
+                    "vertical": row.vertical,
+                    "flags": [],
+                    "sources": [],
+                    "errors": ["verification is not configured"],
+                }
+            else:
+                result = self._verifier(row.vertical, data)
+            self._audit(
+                s,
+                row.id,
+                "record.verified",
+                flags=[f["id"] for f in result.get("flags", [])],
+                sources=[src.get("name") for src in result.get("sources", [])],
+                errors=len(result.get("errors", [])),
+            )
+            s.commit()
+            return result
 
     def export(self, session_id: str, target: str) -> dict[str, Any]:
         """Export an approved record (again, or for the first time) to a target."""

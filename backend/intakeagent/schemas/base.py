@@ -22,6 +22,14 @@ class Evidence(BaseModel):
     segment_id: str | None = None
 
 
+class Coding(BaseModel):
+    """A code from a standard terminology (FHIR ``Coding``): RxNorm, ICD-10-CM, ..."""
+
+    system: str
+    code: str
+    display: str
+
+
 class Extracted[T](BaseModel):
     """A single extracted value plus its provenance."""
 

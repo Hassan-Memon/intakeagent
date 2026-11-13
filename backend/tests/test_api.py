@@ -140,3 +140,79 @@ def test_websocket_unknown_session_closes(client):
     with pytest.raises(WebSocketDisconnect) as exc, client.websocket_connect("/ws/intake/nope"):
         pass
     assert exc.value.code == 4404
+
+
+def _finished(client, vertical):
+    sid = client.post("/sessions", json={"vertical": vertical}).json()["id"]
+    for line in SCRIPTS[vertical]:
+        client.post(f"/sessions/{sid}/text", json={"text": line})
+    return sid, client.post(f"/sessions/{sid}/finish").json()
+
+
+def test_finish_attaches_verification_to_the_interrupt(client):
+    _, fin = _finished(client, "healthcare")
+    verification = fin["interrupt"]["verification"]
+    assert [f["kind"] for f in verification["flags"]] == ["allergy_class"]
+    assert verification["chief_complaint"]["suggestions"][0]["code"] == "R10.31"
+
+
+def test_verify_endpoint_rechecks_an_edited_record(client):
+    sid, fin = _finished(client, "healthcare")
+    record = fin["interrupt"]["record"]
+    record["medications"]["value"] = [{"name": "metformin"}]  # reviewer removed amoxicillin
+    out = client.post(f"/sessions/{sid}/verify", json={"record": record}).json()
+    assert out["flags"] == []
+    stored = client.post(f"/sessions/{sid}/verify").json()  # stored record still has it
+    assert len(stored["flags"]) == 1
+
+    bad = client.post(f"/sessions/{sid}/verify", json={"record": {"medications": 3}})
+    assert bad.status_code == 422
+    actions = [e["action"] for e in client.get(f"/sessions/{sid}/audit").json()]
+    assert actions.count("record.verified") == 2
+
+
+def test_approve_audits_acknowledged_flags_and_exports_codes(client):
+    sid, fin = _finished(client, "healthcare")
+    flag_id = fin["interrupt"]["verification"]["flags"][0]["id"]
+    record = fin["interrupt"]["record"]
+    record["codes"]["medications"]["metformin"] = {
+        "system": "http://www.nlm.nih.gov/research/umls/rxnorm",
+        "code": "6809",
+        "display": "metformin",
+    }
+    appr = client.post(
+        f"/sessions/{sid}/approve",
+        json={"record": record, "export_target": "fhir", "acknowledged_flags": [flag_id]},
+    )
+    assert appr.status_code == 200
+    bundle = appr.json()["record"]["export_result"]["payload"]
+    codings = [
+        e["resource"]["medicationCodeableConcept"].get("coding")
+        for e in bundle["entry"]
+        if e["resource"]["resourceType"] == "MedicationStatement"
+    ]
+    assert [c[0]["code"] for c in codings if c] == ["6809"]
+    approved = next(
+        e for e in client.get(f"/sessions/{sid}/audit").json() if e["action"] == "record.approved"
+    )
+    assert approved["detail"]["acknowledged_flags"] == [flag_id]
+
+
+def test_legal_verification_and_clio_export_carry_screening(client):
+    sid, fin = _finished(client, "legal")
+    sanctions = fin["interrupt"]["verification"]["sanctions"]
+    statuses = {r["name"]: r["status"] for r in sanctions["results"]}
+    assert statuses["Daniel Okafor"] == "clear"
+    assert statuses["Northwind Logistics"] == "possible_match"
+    assert sanctions["list"]["demo"] is True
+
+    appr = client.post(f"/sessions/{sid}/approve", json={"export_target": "clio"}).json()
+    result = appr["record"]["export_result"]
+    assert result["sanctions_screening"]["status"] == "ok"
+    assert "Sanctions screening against" in result["matter"]["description"]
+
+
+def test_health_reports_verification_sources(client):
+    body = client.get("/health").json()
+    assert body["terminology"] == "offline"
+    assert body["sanctions_list"]["demo"] is True
